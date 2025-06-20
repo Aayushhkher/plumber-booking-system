@@ -1,0 +1,101 @@
+Name,District,Current_Tasks,Free_Time_Slots,Languages_Spoken,Work_Specialization,Distance_from_Client_km,Latitude,Longitude
+Plumber_1,Valsad,Pipe Installation,"5PM-7PM, 9AM-11AM, 11AM-1PM",Gujarati,Bathroom Fitting,22.7,20.6100,72.9300
+Plumber_2,Porbandar,Bathroom Fitting,"3PM-5PM, 11AM-1PM",Hindi,Leak Repair,46.5,21.6420,69.6040
+Plumber_3,Surendranagar,"Kitchen Plumbing, Pipe Installation","1PM-3PM, 3PM-5PM, 11AM-1PM",Marathi,Leak Repair,17.4,22.7284,71.6372
+Plumber_4,Bhavnagar,"Water Tank Cleaning, Bathroom Fitting","5PM-7PM, 11AM-1PM",Hindi,Water Tank Cleaning,6.4,21.7645,72.1519
+Plumber_5,Porbandar,"Kitchen Plumbing, Pipe Installation","3PM-5PM, 9AM-11AM, 1PM-3PM","Marathi, Hindi",Leak Repair,20.4,21.6420,69.6040
+Plumber_6,Surat,"Leak Repair, Kitchen Plumbing",9AM-11AM,English,Water Tank Cleaning,14.7,21.1702,72.8311
+Plumber_7,Bharuch,Pipe Installation,"11AM-1PM, 9AM-11AM","English, Marathi, Gujarati",Water Tank Cleaning,30.9,21.7051,72.9959
+Plumber_8,Patan,Kitchen Plumbing,"1PM-3PM, 9AM-11AM, 11AM-1PM","Gujarati, Marathi",Kitchen Plumbing,9.6,23.8506,72.1261
+Plumber_9,Banaskantha,"Bathroom Fitting, Pipe Installation",9AM-11AM,"Gujarati, Marathi",Bathroom Fitting,13.5,24.3782,72.3896
+Plumber_10,Surat,"Water Tank Cleaning, Leak Repair",3PM-5PM,"English, Marathi, Hindi",Kitchen Plumbing,39.3,21.1702,72.8311
+Plumber_11,Patan,"Water Tank Cleaning, Kitchen Plumbing","11AM-1PM, 3PM-5PM, 5PM-7PM",Marathi,Kitchen Plumbing,29.6,23.8506,72.1261
+Plumber_12,Vadodara,Kitchen Plumbing,"1PM-3PM, 11AM-1PM","Marathi, English",Kitchen Plumbing,48.8,22.3039,73.1812
+Plumber_13,Amreli,"Water Tank Cleaning, Bathroom Fitting, Leak Repair","9AM-11AM, 11AM-1PM, 1PM-3PM","Gujarati, Hindi, English",Water Tank Cleaning,42.0,22.5726,72.9505
+Plumber_14,Anand,Bathroom Fitting,"11AM-1PM, 3PM-5PM, 5PM-7PM","Hindi, English",Leak Repair,41.3,22.5726,72.9505
+Plumber_15,Anand,"Water Tank Cleaning, Kitchen Plumbing, Bathroom Fitting","1PM-3PM, 3PM-5PM","Marathi, English",Leak Repair,16.4,22.5726,72.9505
+Plumber_16,Patan,Pipe Installation,"9AM-11AM, 5PM-7PM, 1PM-3PM","Marathi, English",Kitchen Plumbing,16.6,23.8506,72.1261
+Plumber_17,Rajkot,Leak Repair,"5PM-7PM, 11AM-1PM",Hindi,Bathroom Fitting,48.1,22.3039,73.1812
+Plumber_18,Gandhinagar,Leak Repair,1PM-3PM,"Marathi, Gujarati, English",Kitchen Plumbing,46.3,23.2185,72.6348
+Plumber_19,Patan,"Water Tank Cleaning, Leak Repair, Pipe Installation",9AM-11AM,"Marathi, Hindi",Bathroom Fitting,11.0,23.8506,72.1261
+Plumber_20,Rajkot,Pipe Installation,"1PM-3PM, 9AM-11AM","English, Gujarati, Marathi",Pipe Installation,49.8,22.3039,73.1812
+Plumber_21,Jamnagar,"Kitchen Plumbing, Leak Repair, Water Tank Cleaning",5PM-7PM,"Marathi, English",Pipe Installation,20.0,22.2581,70.0696
+Plumber_22,Patan,Bathroom Fitting,9AM-11AM,Gujarati,Leak Repair,23.0,23.8506,72.1261
+Plumber_23,Mehsana,Leak Repair,"5PM-7PM, 11AM-1PM, 3PM-5PM",Marathi,Water Tank Cleaning,6.0,23.5833,72.9167
+Plumber_24,Surat,"Leak Repair, Bathroom Fitting",11AM-1PM,"Gujarati, English",Kitchen Plumbing,42.0,21.1702,72.8311
+Plumber_25,Anand,"Kitchen Plumbing, Bathroom Fitting","1PM-3PM, 3PM-5PM, 9AM-11AM","English, Gujarati",Pipe Installation,10.5,22.5726,72.9505
+Plumber_26,Surat,Pipe Installation,"5PM-7PM, 11AM-1PM","Marathi, English, Hindi",Water Tank Cleaning,47.1,21.1702,72.8311
+Plumber_27,Surat,Pipe Installation,3PM-5PM,"Hindi, English",Kitchen Plumbing,35.2,21.1702,72.8311
+Plumber_28,Gandhinagar,"Pipe Installation, Leak Repair","1PM-3PM, 9AM-11AM",Marathi,Water Tank Cleaning,38.3,23.2185,72.6348
+Plumber_29,Surat,"Pipe Installation, Leak Repair, Bathroom Fitting",11AM-1PM,"Marathi, Hindi",Pipe Installation,13.3,21.1702,72.8311
+Plumber_30,Banaskantha,Bathroom Fitting,"5PM-7PM, 1PM-3PM, 3PM-5PM","Hindi, Marathi",Leak Repair,23.2,24.3782,72.3896
+Plumber_31,Rajkot,"Water Tank Cleaning, Leak Repair","1PM-3PM, 3PM-5PM","Hindi, Gujarati",Pipe Installation,11.8,22.3039,73.1812
+Plumber_32,Valsad,"Bathroom Fitting, Pipe Installation, Kitchen Plumbing",5PM-7PM,Marathi,Leak Repair,33.4,20.6100,72.9300
+Plumber_33,Rajkot,"Kitchen Plumbing, Water Tank Cleaning","1PM-3PM, 3PM-5PM, 9AM-11AM","English, Marathi",Pipe Installation,15.6,22.3039,73.1812
+Plumber_34,Navsari,"Kitchen Plumbing, Pipe Installation","5PM-7PM, 3PM-5PM","Marathi, Gujarati",Bathroom Fitting,11.5,21.0000,73.9667
+Plumber_35,Rajkot,"Leak Repair, Kitchen Plumbing, Pipe Installation","11AM-1PM, 9AM-11AM, 1PM-3PM",English,Leak Repair,39.3,22.3039,73.1812
+Plumber_36,Surat,"Water Tank Cleaning, Kitchen Plumbing, Pipe Installation","3PM-5PM, 11AM-1PM","Hindi, Marathi",Water Tank Cleaning,18.7,21.1702,72.8311
+Plumber_37,Ahmedabad,Leak Repair,9AM-11AM,"English, Gujarati",Leak Repair,16.3,23.0300,72.5800
+Plumber_38,Porbandar,"Leak Repair, Kitchen Plumbing, Pipe Installation",3PM-5PM,"Gujarati, Marathi, Hindi",Kitchen Plumbing,35.6,21.6420,69.6040
+Plumber_39,Anand,"Water Tank Cleaning, Kitchen Plumbing, Pipe Installation",3PM-5PM,"English, Marathi",Water Tank Cleaning,33.8,22.5726,72.9505
+Plumber_40,Ahmedabad,"Water Tank Cleaning, Kitchen Plumbing","1PM-3PM, 3PM-5PM, 5PM-7PM",Hindi,Water Tank Cleaning,35.8,23.0300,72.5800
+Plumber_41,Patan,Water Tank Cleaning,"9AM-11AM, 11AM-1PM, 5PM-7PM","English, Gujarati, Hindi",Bathroom Fitting,36.6,23.8506,72.1261
+Plumber_42,Patan,"Pipe Installation, Leak Repair, Water Tank Cleaning","5PM-7PM, 3PM-5PM","Hindi, Gujarati",Leak Repair,17.8,23.8506,72.1261
+Plumber_43,Anand,"Pipe Installation, Kitchen Plumbing, Leak Repair",1PM-3PM,"Marathi, Hindi",Bathroom Fitting,19.5,22.5726,72.9505
+Plumber_44,Valsad,"Leak Repair, Water Tank Cleaning",3PM-5PM,Hindi,Bathroom Fitting,7.8,20.6100,72.9300
+Plumber_45,Amreli,"Leak Repair, Kitchen Plumbing, Water Tank Cleaning","11AM-1PM, 3PM-5PM, 9AM-11AM",Marathi,Water Tank Cleaning,25.4,22.5726,72.9505
+Plumber_46,Mehsana,"Bathroom Fitting, Kitchen Plumbing",3PM-5PM,"Marathi, English",Bathroom Fitting,6.8,23.5833,72.9167
+Plumber_47,Morbi,"Bathroom Fitting, Pipe Installation","5PM-7PM, 1PM-3PM","Hindi, Gujarati",Kitchen Plumbing,42.6,22.8000,74.0000
+Plumber_48,Mehsana,Bathroom Fitting,"9AM-11AM, 11AM-1PM, 1PM-3PM",Gujarati,Water Tank Cleaning,39.4,23.5833,72.9167
+Plumber_49,Valsad,Water Tank Cleaning,"5PM-7PM, 11AM-1PM","English, Hindi",Water Tank Cleaning,3.6,20.6100,72.9300
+Plumber_50,Vadodara,"Water Tank Cleaning, Pipe Installation, Kitchen Plumbing","1PM-3PM, 11AM-1PM, 5PM-7PM","Gujarati, Marathi",Leak Repair,26.5,22.3039,73.9667
+Plumber_51,Anand,Leak Repair,3PM-5PM,English,Water Tank Cleaning,2.9,22.5726,72.9505
+Plumber_52,Banaskantha,Leak Repair,5PM-7PM,"English, Gujarati, Marathi",Kitchen Plumbing,38.1,24.3782,72.3896
+Plumber_53,Morbi,Bathroom Fitting,"5PM-7PM, 11AM-1PM","Gujarati, English",Bathroom Fitting,24.0,22.8000,74.0000
+Plumber_54,Bharuch,"Leak Repair, Kitchen Plumbing","9AM-11AM, 5PM-7PM","Marathi, Hindi",Leak Repair,9.1,21.7051,72.9959
+Plumber_55,Porbandar,"Water Tank Cleaning, Kitchen Plumbing, Leak Repair",1PM-3PM,"Marathi, Hindi, English",Bathroom Fitting,20.1,21.6420,69.6040
+Plumber_56,Bharuch,"Bathroom Fitting, Pipe Installation",1PM-3PM,Gujarati,Water Tank Cleaning,12.1,21.7051,72.9959
+Plumber_57,Rajkot,"Pipe Installation, Leak Repair",9AM-11AM,"Hindi, English",Bathroom Fitting,37.8,22.3039,73.1812
+Plumber_58,Nadiad,"Water Tank Cleaning, Leak Repair",3PM-5PM,Marathi,Pipe Installation,43.0,22.6850,72.8750
+Plumber_59,Banaskantha,Bathroom Fitting,"5PM-7PM, 11AM-1PM",Gujarati,Water Tank Cleaning,31.6,24.3782,72.3896
+Plumber_60,Valsad,"Bathroom Fitting, Pipe Installation, Kitchen Plumbing","5PM-7PM, 1PM-3PM","English, Gujarati, Marathi",Pipe Installation,32.7,20.6100,72.9300
+Plumber_61,Ahmedabad,"Kitchen Plumbing, Bathroom Fitting, Leak Repair","9AM-11AM, 3PM-5PM","Hindi, Marathi",Water Tank Cleaning,34.6,23.0300,72.5800
+Plumber_62,Vadodara,Leak Repair,"11AM-1PM, 5PM-7PM","Marathi, Gujarati",Leak Repair,36.9,22.3039,73.1812
+Plumber_63,Jamnagar,"Water Tank Cleaning, Leak Repair","11AM-1PM, 1PM-3PM, 9AM-11AM",Hindi,Pipe Installation,9.0,22.2581,70.0696
+Plumber_64,Jamnagar,Kitchen Plumbing,"9AM-11AM, 5PM-7PM, 3PM-5PM","English, Hindi",Water Tank Cleaning,8.7,22.2581,70.0696
+Plumber_65,Surendranagar,Pipe Installation,"1PM-3PM, 9AM-11AM",Marathi,Water Tank Cleaning,8.2,22.7284,71.6372
+Plumber_66,Surendranagar,"Bathroom Fitting, Water Tank Cleaning, Leak Repair",11AM-1PM,Gujarati,Leak Repair,29.3,22.7284,71.6372
+Plumber_67,Rajkot,"Water Tank Cleaning, Leak Repair","3PM-5PM, 11AM-1PM, 9AM-11AM",Gujarati,Bathroom Fitting,42.7,22.3039,73.1812
+Plumber_68,Bharuch,"Kitchen Plumbing, Bathroom Fitting, Water Tank Cleaning",5PM-7PM,Marathi,Water Tank Cleaning,21.0,21.7051,72.9959
+Plumber_69,Morbi,"Water Tank Cleaning, Bathroom Fitting, Pipe Installation","1PM-3PM, 5PM-7PM, 3PM-5PM",English,Pipe Installation,47.4,22.8000,74.0000
+Plumber_70,Gandhinagar,Kitchen Plumbing,11AM-1PM,"English, Gujarati",Leak Repair,34.8,23.2185,72.6348
+Plumber_71,Valsad,"Leak Repair, Water Tank Cleaning, Bathroom Fitting",9AM-11AM,"English, Hindi",Pipe Installation,36.8,20.6100,72.9300
+Plumber_72,Banaskantha,Kitchen Plumbing,"1PM-3PM, 11AM-1PM, 3PM-5PM","Gujarati, Marathi, English",Leak Repair,42.2,24.3782,72.3896
+Plumber_73,Valsad,Kitchen Plumbing,11AM-1PM,"English, Hindi",Pipe Installation,37.2,20.6100,72.9300
+Plumber_74,Anand,Kitchen Plumbing,"5PM-7PM, 1PM-3PM","Hindi, English",Kitchen Plumbing,33.1,22.5726,72.9505
+Plumber_75,Patan,Leak Repair,"1PM-3PM, 9AM-11AM, 3PM-5PM","English, Gujarati",Water Tank Cleaning,21.1,23.8506,72.1261
+Plumber_76,Banaskantha,"Bathroom Fitting, Kitchen Plumbing",9AM-11AM,English,Kitchen Plumbing,31.8,24.3782,72.3896
+Plumber_77,Navsari,"Pipe Installation, Kitchen Plumbing, Bathroom Fitting","3PM-5PM, 9AM-11AM","Marathi, English",Leak Repair,25.4,21.0000,73.9667
+Plumber_78,Ahmedabad,"Pipe Installation, Leak Repair, Bathroom Fitting","5PM-7PM, 3PM-5PM, 11AM-1PM",Marathi,Bathroom Fitting,12.9,23.0300,72.5800
+Plumber_79,Junagadh,"Pipe Installation, Leak Repair, Water Tank Cleaning",5PM-7PM,Gujarati,Water Tank Cleaning,42.9,22.5726,73.9667
+Plumber_80,Morbi,Pipe Installation,"5PM-7PM, 9AM-11AM, 11AM-1PM",Gujarati,Bathroom Fitting,37.6,22.8000,74.0000
+Plumber_81,Surendranagar,"Water Tank Cleaning, Kitchen Plumbing, Pipe Installation","1PM-3PM, 3PM-5PM, 11AM-1PM",Gujarati,Leak Repair,47.8,22.7284,71.6372
+Plumber_82,Junagadh,Bathroom Fitting,"1PM-3PM, 5PM-7PM",Marathi,Pipe Installation,1.4,22.5726,73.9667
+Plumber_83,Morbi,Bathroom Fitting,"1PM-3PM, 5PM-7PM","Marathi, Hindi",Bathroom Fitting,20.9,22.8000,74.0000
+Plumber_84,Bhavnagar,"Leak Repair, Water Tank Cleaning","1PM-3PM, 3PM-5PM, 5PM-7PM","Gujarati, Marathi",Bathroom Fitting,8.2,21.7645,72.1519
+Plumber_85,Vadodara,"Leak Repair, Kitchen Plumbing","5PM-7PM, 3PM-5PM",Marathi,Pipe Installation,26.6,22.3039,73.1812
+Plumber_86,Banaskantha,Pipe Installation,"11AM-1PM, 9AM-11AM, 1PM-3PM","English, Gujarati",Water Tank Cleaning,25.7,24.3782,72.3896
+Plumber_87,Bharuch,"Water Tank Cleaning, Bathroom Fitting",5PM-7PM,"Marathi, English",Water Tank Cleaning,22.9,21.7051,72.9959
+Plumber_88,Patan,"Pipe Installation, Bathroom Fitting","3PM-5PM, 9AM-11AM","Gujarati, English",Water Tank Cleaning,18.8,23.8506,72.1261
+Plumber_89,Amreli,Kitchen Plumbing,5PM-7PM,"Marathi, Gujarati, English",Leak Repair,40.4,22.5726,72.9505
+Plumber_90,Morbi,"Leak Repair, Kitchen Plumbing, Bathroom Fitting","9AM-11AM, 11AM-1PM","Gujarati, Hindi, Marathi",Bathroom Fitting,8.8,22.8000,74.0000
+Plumber_91,Nadiad,"Leak Repair, Water Tank Cleaning, Kitchen Plumbing","9AM-11AM, 1PM-3PM","Marathi, Gujarati",Leak Repair,38.5,22.6850,72.8750
+Plumber_92,Ahmedabad,"Leak Repair, Kitchen Plumbing, Water Tank Cleaning",5PM-7PM,Marathi,Leak Repair,16.4,23.0300,72.5800
+Plumber_93,Rajkot,Water Tank Cleaning,"9AM-11AM, 5PM-7PM","English, Marathi, Gujarati",Water Tank Cleaning,47.8,22.3039,73.1812
+Plumber_94,Mehsana,"Leak Repair, Water Tank Cleaning","5PM-7PM, 1PM-3PM, 11AM-1PM",Marathi,Pipe Installation,30.9,23.5833,72.9167
+Plumber_95,Patan,"Water Tank Cleaning, Pipe Installation","5PM-7PM, 3PM-5PM","Gujarati, English, Marathi",Pipe Installation,19.7,23.8506,72.1261
+Plumber_96,Valsad,"Bathroom Fitting, Kitchen Plumbing","5PM-7PM, 1PM-3PM, 3PM-5PM","Marathi, English, Gujarati",Bathroom Fitting,5.3,20.6100,72.9300
+Plumber_97,Amreli,"Kitchen Plumbing, Bathroom Fitting, Pipe Installation","11AM-1PM, 3PM-5PM","Marathi, Hindi",Kitchen Plumbing,31.3,22.5726,72.9505
+Plumber_98,Patan,"Kitchen Plumbing, Bathroom Fitting",3PM-5PM,"English, Hindi",Water Tank Cleaning,30.9,23.8506,72.1261
+Plumber_99,Banaskantha,Leak Repair,3PM-5PM,"Hindi, Gujarati",Leak Repair,30.8,24.3782,72.3896
+Plumber_100,Surendranagar,"Kitchen Plumbing, Bathroom Fitting, Water Tank Cleaning","11AM-1PM, 9AM-11AM",Hindi,Bathroom Fitting,49.8,22.7284,71.6372

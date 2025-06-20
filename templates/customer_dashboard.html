@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-5">
+    <h2>Welcome, {{ current_user.name }}!</h2>
+    <a href="/logout" class="btn btn-secondary float-end">Logout</a>
+    <div class="mt-3" id="notificationArea">{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}</div>
+    <ul class="nav nav-tabs mt-4" id="bookingTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab">Upcoming</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab">Past</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab">Cancelled</button>
+        </li>
+    </ul>
+    <div class="tab-content mt-3" id="bookingTabsContent">
+        <div class="tab-pane fade show active" id="upcoming" role="tabpanel">
+            {% set upcoming = bookings|selectattr('status', 'in', ['pending', 'confirmed'])|list %}
+            {% if upcoming %}
+            <div class="table-responsive"><table class="table table-bordered">
+                <thead><tr><th>Plumber</th><th>Date</th><th>Time Slot</th><th>Service</th><th>Status</th><th>Map</th><th>Actions</th></tr></thead>
+                <tbody>
+                {% for b in upcoming %}
+                <tr>
+                    <td>{{ b.plumber_name }}</td>
+                    <td>{{ b.date }}</td>
+                    <td>{{ b.time_slot }}</td>
+                    <td>{{ b.service_type }}</td>
+                    <td>{{ b.status|capitalize }}</td>
+                    <td><a href="https://www.google.com/maps?q={{ b.client_lat }},{{ b.client_lon }}" target="_blank">View</a></td>
+                    <td>
+                        <form method="POST" action="/cancel_booking/{{ b.id }}" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+            {% else %}<p>No upcoming bookings.</p>{% endif %}
+        </div>
+        <div class="tab-pane fade" id="past" role="tabpanel">
+            {% set past = bookings|selectattr('status', 'equalto', 'completed')|list %}
+            {% if past %}
+            <div class="table-responsive"><table class="table table-bordered">
+                <thead><tr><th>Plumber</th><th>Date</th><th>Time Slot</th><th>Service</th><th>Status</th><th>Map</th><th>Actions</th></tr></thead>
+                <tbody>
+                {% for b in past %}
+                <tr>
+                    <td>{{ b.plumber_name }}</td>
+                    <td>{{ b.date }}</td>
+                    <td>{{ b.time_slot }}</td>
+                    <td>{{ b.service_type }}</td>
+                    <td>{{ b.status|capitalize }}</td>
+                    <td><a href="https://www.google.com/maps?q={{ b.client_lat }},{{ b.client_lon }}" target="_blank">View</a></td>
+                    <td>
+                        {% if not b.reviewed %}
+                        <a href="/review_booking/{{ b.id }}" class="btn btn-success btn-sm">Review</a>
+                        {% endif %}
+                        <a href="/book_plumber" class="btn btn-primary btn-sm">Book Again</a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+            {% else %}<p>No past bookings.</p>{% endif %}
+        </div>
+        <div class="tab-pane fade" id="cancelled" role="tabpanel">
+            {% set cancelled = bookings|selectattr('status', 'equalto', 'cancelled')|list %}
+            {% if cancelled %}
+            <div class="table-responsive"><table class="table table-bordered">
+                <thead><tr><th>Plumber</th><th>Date</th><th>Time Slot</th><th>Service</th><th>Status</th><th>Map</th></tr></thead>
+                <tbody>
+                {% for b in cancelled %}
+                <tr>
+                    <td>{{ b.plumber_name }}</td>
+                    <td>{{ b.date }}</td>
+                    <td>{{ b.time_slot }}</td>
+                    <td>{{ b.service_type }}</td>
+                    <td>{{ b.status|capitalize }}</td>
+                    <td><a href="https://www.google.com/maps?q={{ b.client_lat }},{{ b.client_lon }}" target="_blank">View</a></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+            {% else %}<p>No cancelled bookings.</p>{% endif %}
+        </div>
+    </div>
+    <a href="/book_plumber" class="btn btn-primary mt-4">Schedule a New Plumber</a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

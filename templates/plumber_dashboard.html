@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plumber Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-5">
+    <h2>Welcome, {{ current_user.name }}!</h2>
+    <a href="/logout" class="btn btn-secondary float-end">Logout</a>
+    {% if plumber_notification %}
+    <div class="alert alert-info mt-3">{{ plumber_notification }}</div>
+    {% endif %}
+    <h4 class="mt-4">Your Jobs</h4>
+    {% if bookings %}
+    <table class="table table-bordered mt-3">
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Time Slot</th>
+                <th>Status</th>
+                <th>Service</th>
+                <th>Location</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for b in bookings %}
+            <tr>
+                <td>{{ b.customer_name }}</td>
+                <td>{{ b.date }}</td>
+                <td>{{ b.time_slot }}</td>
+                <td>{{ b.status }}</td>
+                <td>{{ b.service_type }}</td>
+                <td>{% if b.client_lat and b.client_lon %}<a href="https://www.google.com/maps?q={{ b.client_lat }},{{ b.client_lon }}" target="_blank">View Map</a>{% else %}N/A{% endif %}</td>
+                <td>
+                    {% if b.status == 'pending' %}
+                        <form method="POST" action="/accept_booking/{{ b.id }}" style="display:inline;">
+                            <button type="submit" class="btn btn-success btn-sm">Accept</button>
+                        </form>
+                        <form method="POST" action="/reject_booking/{{ b.id }}" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                        </form>
+                    {% elif b.status == 'confirmed' %}
+                        <form method="POST" action="/complete_booking/{{ b.id }}" style="display:inline;">
+                            <button type="submit" class="btn btn-primary btn-sm">Mark Completed</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No jobs yet.</p>
+    {% endif %}
+    <h4 class="mt-5">Your Reviews</h4>
+    {% if reviews %}
+    <ul class="list-group mt-3">
+        {% for r in reviews %}
+            <li class="list-group-item">
+                <b>Rating:</b> {{ r.rating }}<br>
+                <b>Comment:</b> {{ r.comment }}<br>
+                <b>From:</b> {{ r.customer_name }} on {{ r.date }}
+            </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+        <p>No reviews yet.</p>
+    {% endif %}
+    <h4 class="mt-5">Update Your Free Time Slots</h4>
+    <form method="POST" action="/update_availability">
+        <div class="mb-3">
+            <label for="free_time_slots" class="form-label">Free Time Slots (comma separated)</label>
+            <input type="text" class="form-control" id="free_time_slots" name="free_time_slots" value="{{ free_time_slots }}">
+        </div>
+        <button type="submit" class="btn btn-info">Update</button>
+    </form>
+</div>
+</body>
+</html> 

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a Plumber</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script>
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                document.getElementById('client_lat').value = position.coords.latitude;
+                document.getElementById('client_lon').value = position.coords.longitude;
+                document.getElementById('locationStatus').innerText = 'Location set!';
+            }, function() {
+                document.getElementById('locationStatus').innerText = 'Location access denied.';
+            });
+        } else {
+            document.getElementById('locationStatus').innerText = 'Geolocation not supported.';
+        }
+    }
+    </script>
+</head>
+<body>
+<div class="container mt-5">
+    <h2>Schedule a New Plumber</h2>
+    <div id="step1">
+        <form id="searchForm">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="date" class="form-label">Date</label>
+                    <input type="date" class="form-control" id="date" name="date" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="time_slot" class="form-label">Time Slot</label>
+                    <select class="form-select" id="time_slot" name="time_slot" required>
+                        {% for slot in time_slots %}
+                            <option value="{{ slot }}">{{ slot }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="work_type" class="form-label">Work Type</label>
+                    <select class="form-select" id="work_type" name="work_type" required>
+                        {% for wt in work_types %}
+                            <option value="{{ wt }}">{{ wt }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="language" class="form-label">Language</label>
+                    <select class="form-select" id="language" name="language">
+                        <option value="Any">Any</option>
+                        {% for lang in languages %}
+                            <option value="{{ lang }}">{{ lang }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary" id="nextToLocation">Next: Set Location</button>
+            <a href="/customer_dashboard" class="btn btn-link">Back to Dashboard</a>
+        </form>
+    </div>
+    <div id="step2" style="display:none;">
+        <h4 class="mt-4">Step 2: Set Your Location</h4>
+        <div id="map" style="height: 300px;"></div>
+        <input type="hidden" id="client_lat" name="client_lat">
+        <input type="hidden" id="client_lon" name="client_lon">
+        <button type="button" class="btn btn-info mt-2" id="useLocation">Use My Current Location</button>
+        <span id="locationStatus" class="ms-2"></span>
+        <br>
+        <button type="button" class="btn btn-primary mt-3" id="searchPlumbers">Find Available Plumbers</button>
+        <button type="button" class="btn btn-secondary mt-3" id="backToStep1">Back</button>
+    </div>
+    <div id="step3" style="display:none;">
+        <h4 class="mt-4">Step 3: Available Plumbers</h4>
+        <div id="plumberResults"></div>
+        <button type="button" class="btn btn-secondary mt-3" id="backToStep2">Back</button>
+    </div>
+    <div id="messageBox" class="mt-3"></div>
+</div>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+let map, marker;
+function showStep(step) {
+    document.getElementById('step1').style.display = step === 1 ? '' : 'none';
+    document.getElementById('step2').style.display = step === 2 ? '' : 'none';
+    document.getElementById('step3').style.display = step === 3 ? '' : 'none';
+}
+document.getElementById('nextToLocation').onclick = function() {
+    showStep(2);
+    if (!map) {
+        map = L.map('map').setView([22.3, 70.8], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+        }).addTo(map);
+        map.on('click', function(e) {
+            setLatLon(e.latlng.lat, e.latlng.lng);
+        });
+    }
+};
+document.getElementById('useLocation').onclick = function() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            setLatLon(pos.coords.latitude, pos.coords.longitude);
+            map.setView([pos.coords.latitude, pos.coords.longitude], 14);
+        }, function() {
+            document.getElementById('locationStatus').innerText = 'Could not get location.';
+        });
+    } else {
+        document.getElementById('locationStatus').innerText = 'Geolocation not supported.';
+    }
+};
+function setLatLon(lat, lon) {
+    document.getElementById('client_lat').value = lat;
+    document.getElementById('client_lon').value = lon;
+    document.getElementById('locationStatus').innerText = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
+    if (marker) map.removeLayer(marker);
+    marker = L.marker([lat, lon]).addTo(map);
+}
+document.getElementById('backToStep1').onclick = function() { showStep(1); };
+document.getElementById('backToStep2').onclick = function() { showStep(2); };
+document.getElementById('searchPlumbers').onclick = function() {
+    const date = document.getElementById('date').value;
+    const time_slot = document.getElementById('time_slot').value;
+    const work_type = document.getElementById('work_type').value;
+    const language = document.getElementById('language').value;
+    const client_lat = document.getElementById('client_lat').value;
+    const client_lon = document.getElementById('client_lon').value;
+    if (!client_lat || !client_lon) {
+        document.getElementById('messageBox').innerHTML = '<div class="alert alert-danger">Please set your location.</div>';
+        return;
+    }
+    document.getElementById('messageBox').innerHTML = '';
+    fetch('/api/available_plumbers', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({date, time_slot, work_type, language, client_lat, client_lon})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            document.getElementById('messageBox').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            return;
+        }
+        if (!data.plumbers || data.plumbers.length === 0) {
+            document.getElementById('plumberResults').innerHTML = '<div class="alert alert-warning">No plumbers available for your criteria.</div>';
+        } else {
+            let html = '<table class="table table-bordered mt-3"><thead><tr><th>Name</th><th>Specialization</th><th>Languages</th><th>ETA (min)</th><th>Distance (km)</th><th>Rating</th><th>Select</th></tr></thead><tbody>';
+            for (const p of data.plumbers) {
+                html += `<tr><td>${p.name}</td><td>${p.specialization}</td><td>${p.languages}</td><td>${p.eta}</td><td>${p.distance}</td><td>${p.rating !== null ? p.rating : 'N/A'}</td><td><form method="POST" action="/book_plumber"><input type="hidden" name="date" value="${date}"><input type="hidden" name="time_slot" value="${time_slot}"><input type="hidden" name="work_type" value="${work_type}"><input type="hidden" name="language" value="${language}"><input type="hidden" name="client_lat" value="${client_lat}"><input type="hidden" name="client_lon" value="${client_lon}"><input type="hidden" name="plumber_id" value="${p.id}"><button type="submit" class="btn btn-success btn-sm">Book</button></form></td></tr>`;
+            }
+            html += '</tbody></table>';
+            document.getElementById('plumberResults').innerHTML = html;
+        }
+        showStep(3);
+    })
+    .catch(() => {
+        document.getElementById('messageBox').innerHTML = '<div class="alert alert-danger">Error searching for plumbers.</div>';
+    });
+};
+showStep(1);
+</script>
+</body>
+</html> 
