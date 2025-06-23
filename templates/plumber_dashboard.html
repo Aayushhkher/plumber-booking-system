@@ -5,80 +5,144 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plumber Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .dashboard-header {
+            background: linear-gradient(90deg, #007bff 0%, #00c6ff 100%);
+            color: white;
+            border-radius: 0 0 1rem 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .job-card {
+            min-width: 320px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: none;
+        }
+        .review-card {
+            min-width: 250px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: none;
+        }
+        .status-badge {
+            font-size: 0.9em;
+        }
+        .avatar {
+            width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #eee;
+        }
+    </style>
 </head>
-<body>
-<div class="container mt-5">
-    <h2>Welcome, {{ current_user.name }}!</h2>
-    <a href="/logout" class="btn btn-secondary float-end">Logout</a>
-    {% if plumber_notification %}
-    <div class="alert alert-info mt-3">{{ plumber_notification }}</div>
-    {% endif %}
-    <h4 class="mt-4">Your Jobs</h4>
-    {% if bookings %}
-    <table class="table table-bordered mt-3">
-        <thead>
-            <tr>
-                <th>Customer</th>
-                <th>Date</th>
-                <th>Time Slot</th>
-                <th>Status</th>
-                <th>Service</th>
-                <th>Location</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for b in bookings %}
-            <tr>
-                <td>{{ b.customer_name }}</td>
-                <td>{{ b.date }}</td>
-                <td>{{ b.time_slot }}</td>
-                <td>{{ b.status }}</td>
-                <td>{{ b.service_type }}</td>
-                <td>{% if b.client_lat and b.client_lon %}<a href="https://www.google.com/maps?q={{ b.client_lat }},{{ b.client_lon }}" target="_blank">View Map</a>{% else %}N/A{% endif %}</td>
-                <td>
-                    {% if b.status == 'pending' %}
-                        <form method="POST" action="/accept_booking/{{ b.id }}" style="display:inline;">
-                            <button type="submit" class="btn btn-success btn-sm">Accept</button>
-                        </form>
-                        <form method="POST" action="/reject_booking/{{ b.id }}" style="display:inline;">
-                            <button type="submit" class="btn btn-danger btn-sm">Reject</button>
-                        </form>
-                    {% elif b.status == 'confirmed' %}
-                        <form method="POST" action="/complete_booking/{{ b.id }}" style="display:inline;">
-                            <button type="submit" class="btn btn-primary btn-sm">Mark Completed</button>
-                        </form>
-                    {% endif %}
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-        <p>No jobs yet.</p>
-    {% endif %}
-    <h4 class="mt-5">Your Reviews</h4>
-    {% if reviews %}
-    <ul class="list-group mt-3">
-        {% for r in reviews %}
-            <li class="list-group-item">
-                <b>Rating:</b> {{ r.rating }}<br>
-                <b>Comment:</b> {{ r.comment }}<br>
-                <b>From:</b> {{ r.customer_name }} on {{ r.date }}
-            </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-        <p>No reviews yet.</p>
-    {% endif %}
-    <h4 class="mt-5">Update Your Free Time Slots</h4>
-    <form method="POST" action="/update_availability">
-        <div class="mb-3">
-            <label for="free_time_slots" class="form-label">Free Time Slots (comma separated)</label>
-            <input type="text" class="form-control" id="free_time_slots" name="free_time_slots" value="{{ free_time_slots }}">
-        </div>
-        <button type="submit" class="btn btn-info">Update</button>
-    </form>
+<body class="bg-light">
+<div class="dashboard-header p-4 mb-4 d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center">
+        <i class="fa-solid fa-wrench fa-2x me-3"></i>
+        <h2 class="mb-0">Welcome, {{ current_user.name }}!</h2>
+    </div>
+    <a href="/logout" class="btn btn-outline-light">Logout</a>
 </div>
+<div class="container">
+    {% if plumber_notification %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-bell me-2"></i>{{ plumber_notification }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="mb-4">
+                <h4 class="mb-3"><i class="fa-solid fa-briefcase me-2"></i>My Jobs</h4>
+                {% if bookings %}
+                <div class="row row-cols-1 row-cols-md-2 g-3">
+                    {% for b in bookings %}
+                    <div class="col">
+                        <div class="card job-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fa-solid fa-user fa-lg me-2 text-primary"></i>
+                                    <span class="fw-bold">{{ b.customer_name }}</span>
+                                    <span class="ms-auto badge status-badge 
+                                        {% if b.status == 'pending' %}bg-warning text-dark
+                                        {% elif b.status == 'confirmed' %}bg-primary
+                                        {% elif b.status == 'completed' %}bg-success
+                                        {% elif b.status == 'cancelled' %}bg-secondary
+                                        {% endif %}">
+                                        {{ b.status|capitalize }}
+                                    </span>
+                                </div>
+                                <div class="mb-2"><i class="fa-solid fa-calendar-days me-1"></i> {{ b.date }} <i class="fa-solid fa-clock ms-2 me-1"></i> {{ b.time_slot }}</div>
+                                <div class="mb-2"><i class="fa-solid fa-screwdriver-wrench me-1"></i> {{ b.service_type }}</div>
+                                <div class="mb-2">
+                                    <i class="fa-solid fa-location-dot me-1"></i>
+                                    {% if b.client_lat and b.client_lon %}
+                                        <a href="https://www.google.com/maps?q={{ b.client_lat }},{{ b.client_lon }}" target="_blank">View Map</a>
+                                    {% else %}N/A{% endif %}
+                                </div>
+                                <div>
+                                    {% if b.status == 'pending' %}
+                                        <form method="POST" action="/accept_booking/{{ b.id }}" style="display:inline;">
+                                            <button type="submit" class="btn btn-success btn-sm me-1" data-bs-toggle="tooltip" title="Accept"><i class="fa-solid fa-check"></i></button>
+                                        </form>
+                                        <form method="POST" action="/reject_booking/{{ b.id }}" style="display:inline;">
+                                            <button type="submit" class="btn btn-danger btn-sm" data-bs-toggle="tooltip" title="Reject"><i class="fa-solid fa-xmark"></i></button>
+                                        </form>
+                                    {% elif b.status == 'confirmed' %}
+                                        <form method="POST" action="/complete_booking/{{ b.id }}" style="display:inline;">
+                                            <button type="submit" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="Mark Completed"><i class="fa-solid fa-flag-checkered"></i></button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                    <p class="text-muted">No jobs yet.</p>
+                {% endif %}
+            </div>
+            <div class="mb-4">
+                <h4 class="mb-3"><i class="fa-solid fa-star me-2"></i>My Reviews</h4>
+                {% if reviews %}
+                <div class="row row-cols-1 row-cols-md-2 g-3">
+                    {% for r in reviews %}
+                    <div class="col">
+                        <div class="card review-card">
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <span class="fw-bold">{{ r.customer_name }}</span>
+                                    <span class="text-muted ms-2">{{ r.date }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    {% for i in range(1, 6) %}
+                                        <i class="fa-star{% if i <= r.rating %} fa-solid text-warning{% else %} fa-regular text-secondary{% endif %}"></i>
+                                    {% endfor %}
+                                </div>
+                                <div class="mb-2">{{ r.comment }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                    <p class="text-muted">No reviews yet.</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3"><i class="fa-solid fa-calendar-check me-2"></i>Update Your Free Time Slots</h5>
+                    <form method="POST" action="/update_availability">
+                        <div class="mb-3">
+                            <label for="free_time_slots" class="form-label">Free Time Slots (comma separated)</label>
+                            <input type="text" class="form-control" id="free_time_slots" name="free_time_slots" value="{{ free_time_slots }}">
+                        </div>
+                        <button type="submit" class="btn btn-info">Update</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 

@@ -5,114 +5,230 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dashboard-header {
+            background: linear-gradient(90deg, #343a40 0%, #007bff 100%);
+            color: white;
+            border-radius: 0 0 1rem 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .summary-card {
+            min-width: 180px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: none;
+        }
+        .status-badge {
+            font-size: 0.9em;
+        }
+        .avatar {
+            width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #eee;
+        }
+    </style>
 </head>
-<body>
-<div class="container mt-5">
-    <h2>Welcome, {{ current_user.name }} (Admin)</h2>
-    <a href="/logout" class="btn btn-secondary float-end">Logout</a>
+<body class="bg-light">
+<div class="dashboard-header p-4 mb-4 d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center">
+        <i class="fa-solid fa-user-shield fa-2x me-3"></i>
+        <h2 class="mb-0">Welcome, {{ current_user.name }} <span class="fs-5">(Admin)</span></h2>
+    </div>
+    <a href="/logout" class="btn btn-outline-light">Logout</a>
+</div>
+<div class="container">
     {% if admin_notification %}
-    <div class="alert alert-info mt-3">{{ admin_notification }}</div>
+    <div class="alert alert-info alert-dismissible fade show mt-3" role="alert">
+        <i class="fa-solid fa-bell me-2"></i>{{ admin_notification }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
     {% endif %}
-    <h4 class="mt-4">Analytics</h4>
-    <div class="row">
-        <div class="col-md-6">
-            <canvas id="bookingsChart"></canvas>
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card summary-card text-center">
+                <div class="card-body">
+                    <i class="fa-solid fa-users fa-2x mb-2 text-primary"></i>
+                    <h5 class="card-title">Users</h5>
+                    <h3>{{ users|length }}</h3>
+                </div>
+            </div>
         </div>
-        <div class="col-md-6">
-            <canvas id="topPlumbersChart"></canvas>
+        <div class="col-md-3">
+            <div class="card summary-card text-center">
+                <div class="card-body">
+                    <i class="fa-solid fa-user-gear fa-2x mb-2 text-info"></i>
+                    <h5 class="card-title">Plumbers</h5>
+                    <h3>{{ plumbers|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card summary-card text-center">
+                <div class="card-body">
+                    <i class="fa-solid fa-calendar-check fa-2x mb-2 text-success"></i>
+                    <h5 class="card-title">Bookings</h5>
+                    <h3>{{ bookings|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card summary-card text-center">
+                <div class="card-body">
+                    <i class="fa-solid fa-star fa-2x mb-2 text-warning"></i>
+                    <h5 class="card-title">Reviews</h5>
+                    <h3>{{ reviews|length }}</h3>
+                </div>
+            </div>
         </div>
     </div>
-    <hr>
-    <h4 class="mt-4">All Users</h4>
-    <table class="table table-bordered mt-3">
-        <thead>
-            <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-        {% for u in users %}
-            <tr>
-                <td>{{ u.id }}</td>
-                <td>{{ u.name }}</td>
-                <td>{{ u.email }}</td>
-                <td>{{ u.role }}</td>
-                <td>
-                    {% if u.role != 'admin' %}
-                    <form method="POST" action="/delete_user/{{ u.id }}" style="display:inline;">
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                    </form>
-                    {% endif %}
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    <h4 class="mt-5">All Plumbers</h4>
-    <table class="table table-bordered mt-3">
-        <thead>
-            <tr><th>ID</th><th>Name</th><th>District</th><th>Specialization</th><th>Languages</th><th>Free Time Slots</th></tr>
-        </thead>
-        <tbody>
-        {% for p in plumbers %}
-            <tr>
-                <td>{{ p.id }}</td>
-                <td>{{ p.user.name }}</td>
-                <td>{{ p.district }}</td>
-                <td>{{ p.specialization }}</td>
-                <td>{{ p.languages }}</td>
-                <td>{{ p.free_time_slots }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    <h4 class="mt-5">All Bookings</h4>
-    <table class="table table-bordered mt-3">
-        <thead>
-            <tr><th>ID</th><th>Customer</th><th>Plumber</th><th>Date</th><th>Time Slot</th><th>Status</th><th>Service</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-        {% for b in bookings %}
-            <tr>
-                <td>{{ b.id }}</td>
-                <td>{{ b.customer_name }}</td>
-                <td>{{ b.plumber_name }}</td>
-                <td>{{ b.date }}</td>
-                <td>{{ b.time_slot }}</td>
-                <td>{{ b.status }}</td>
-                <td>{{ b.service_type }}</td>
-                <td>
-                    <form method="POST" action="/delete_booking/{{ b.id }}" style="display:inline;">
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                    </form>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    <h4 class="mt-5">All Reviews</h4>
-    <table class="table table-bordered mt-3">
-        <thead>
-            <tr><th>ID</th><th>Booking</th><th>Customer</th><th>Plumber</th><th>Rating</th><th>Comment</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-        {% for r in reviews %}
-            <tr>
-                <td>{{ r.id }}</td>
-                <td>{{ r.booking_id }}</td>
-                <td>{{ r.customer_name }}</td>
-                <td>{{ r.plumber_name }}</td>
-                <td>{{ r.rating }}</td>
-                <td>{{ r.comment }}</td>
-                <td>
-                    <form method="POST" action="/delete_review/{{ r.id }}" style="display:inline;">
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                    </form>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fa-solid fa-chart-line me-2"></i>Bookings per Month</h5>
+                    <canvas id="bookingsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fa-solid fa-trophy me-2"></i>Top Plumbers</h5>
+                    <canvas id="topPlumbersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <ul class="nav nav-pills mb-4" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="users-tab" data-bs-toggle="pill" data-bs-target="#users" type="button" role="tab">Users</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="plumbers-tab" data-bs-toggle="pill" data-bs-target="#plumbers" type="button" role="tab">Plumbers</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="bookings-tab" data-bs-toggle="pill" data-bs-target="#bookings" type="button" role="tab">Bookings</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="reviews-tab" data-bs-toggle="pill" data-bs-target="#reviews" type="button" role="tab">Reviews</button>
+        </li>
+    </ul>
+    <div class="tab-content" id="adminTabsContent">
+        <div class="tab-pane fade show active" id="users" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr><th></th><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for u in users %}
+                        <tr>
+                            <td><i class="fa-solid fa-user-circle fa-lg text-secondary"></i></td>
+                            <td>{{ u.id }}</td>
+                            <td>{{ u.name }}</td>
+                            <td>{{ u.email }}</td>
+                            <td><span class="badge bg-secondary">{{ u.role|capitalize }}</span></td>
+                            <td>
+                                {% if u.role != 'admin' %}
+                                <form method="POST" action="/delete_user/{{ u.id }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm" data-bs-toggle="tooltip" title="Delete User"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="plumbers" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr><th></th><th>ID</th><th>Name</th><th>District</th><th>Specialization</th><th>Languages</th><th>Free Time Slots</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for p in plumbers %}
+                        <tr>
+                            <td><i class="fa-solid fa-user-gear fa-lg text-info"></i></td>
+                            <td>{{ p.id }}</td>
+                            <td>{{ p.user.name }}</td>
+                            <td>{{ p.district }}</td>
+                            <td>{{ p.specialization }}</td>
+                            <td>{{ p.languages }}</td>
+                            <td>{{ p.free_time_slots }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="bookings" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr><th>ID</th><th>Customer</th><th>Plumber</th><th>Date</th><th>Time Slot</th><th>Status</th><th>Service</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for b in bookings %}
+                        <tr>
+                            <td>{{ b.id }}</td>
+                            <td>{{ b.customer_name }}</td>
+                            <td>{{ b.plumber_name }}</td>
+                            <td>{{ b.date }}</td>
+                            <td>{{ b.time_slot }}</td>
+                            <td><span class="badge status-badge 
+                                {% if b.status == 'pending' %}bg-warning text-dark
+                                {% elif b.status == 'confirmed' %}bg-primary
+                                {% elif b.status == 'completed' %}bg-success
+                                {% elif b.status == 'cancelled' %}bg-secondary
+                                {% endif %}">
+                                {{ b.status|capitalize }}
+                            </span></td>
+                            <td>{{ b.service_type }}</td>
+                            <td>
+                                <form method="POST" action="/delete_booking/{{ b.id }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm" data-bs-toggle="tooltip" title="Delete Booking"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="reviews" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr><th>ID</th><th>Booking</th><th>Customer</th><th>Plumber</th><th>Rating</th><th>Comment</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for r in reviews %}
+                        <tr>
+                            <td>{{ r.id }}</td>
+                            <td>{{ r.booking_id }}</td>
+                            <td>{{ r.customer_name }}</td>
+                            <td>{{ r.plumber_name }}</td>
+                            <td>
+                                {% for i in range(1, 6) %}
+                                    <i class="fa-star{% if i <= r.rating %} fa-solid text-warning{% else %} fa-regular text-secondary{% endif %}"></i>
+                                {% endfor %}
+                            </td>
+                            <td>{{ r.comment }}</td>
+                            <td>
+                                <form method="POST" action="/delete_review/{{ r.id }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm" data-bs-toggle="tooltip" title="Delete Review"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // Bookings per month
 const bookingsData = {{ bookings_per_month|tojson }};

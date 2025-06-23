@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Calendar</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css' rel='stylesheet' />
+    <style>
+        body { background: #f8f9fa; }
+        .calendar-header {
+            background: linear-gradient(90deg, #007bff 0%, #00c6ff 100%);
+            color: white;
+            border-radius: 0 0 1rem 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        #calendar { background: white; border-radius: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 1rem; }
+    </style>
+</head>
+<body>
+<div class="calendar-header p-4 mb-4 d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center">
+        <i class="fa-solid fa-calendar-days fa-2x me-3"></i>
+        <h2 class="mb-0">My Calendar</h2>
+    </div>
+    <a href="{{ url_for('customer_dashboard') if user_role == 'customer' else url_for('plumber_dashboard') }}" class="btn btn-outline-light">Back to Dashboard</a>
+</div>
+<div class="container mb-5">
+    <div id='calendar'></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/js/all.min.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        height: 'auto',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,listWeek'
+        },
+        events: {
+            url: '/api/calendar_events',
+            method: 'GET',
+            failure: function() {
+                alert('There was an error while fetching events!');
+            }
+        },
+        eventDidMount: function(info) {
+            // Color by status
+            let status = info.event.extendedProps.status;
+            let color = '#6c757d';
+            if (status === 'pending') color = '#ffc107';
+            else if (status === 'confirmed') color = '#0d6efd';
+            else if (status === 'completed') color = '#198754';
+            else if (status === 'cancelled') color = '#adb5bd';
+            info.el.style.backgroundColor = color;
+            info.el.style.borderColor = color;
+            info.el.style.color = 'white';
+            // Tooltip
+            let tooltip = info.event.title + (info.event.extendedProps.time_slot ? ' (' + info.event.extendedProps.time_slot + ')' : '');
+            info.el.title = tooltip;
+        },
+        eventClick: function(info) {
+            alert(info.event.title + (info.event.extendedProps.time_slot ? '\nTime Slot: ' + info.event.extendedProps.time_slot : ''));
+        }
+    });
+    calendar.render();
+});
+</script>
+</body>
+</html> 

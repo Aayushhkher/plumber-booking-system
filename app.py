@@ -44,6 +44,15 @@ def haversine(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
+# Pricing model: base price per work type
+WORK_TYPE_PRICING = {
+    'leak repair': 300,
+    'installation': 500,
+    'maintenance': 400,
+    'inspection': 200,
+    # Add more as needed
+}
+
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -168,6 +177,16 @@ def customer_dashboard():
     for b in bookings:
         plumber = PlumberProfile.query.get(b.plumber_id)
         review = Review.query.filter_by(booking_id=b.id).first()
+        # Cost estimate logic
+        work_type_norm = (b.service_type or '').strip().lower()
+        base_price = WORK_TYPE_PRICING.get(work_type_norm, 400)
+        dist = None
+        if b.client_lat is not None and b.client_lon is not None and plumber and plumber.lat is not None and plumber.lon is not None:
+            dist = haversine(b.client_lat, b.client_lon, plumber.lat, plumber.lon)
+        if dist is not None:
+            cost_estimate = int(base_price + 10 * dist)
+        else:
+            cost_estimate = base_price
         booking_list.append({
             'id': b.id,
             'plumber_name': plumber.user.name if plumber and plumber.user else 'N/A',
@@ -175,7 +194,12 @@ def customer_dashboard():
             'time_slot': b.time_slot,
             'status': b.status,
             'service_type': b.service_type,
-            'reviewed': bool(review)
+            'reviewed': bool(review),
+            'cost_estimate': cost_estimate,
+            'client_lat': b.client_lat,
+            'client_lon': b.client_lon,
+            'plumber_lat': plumber.lat if plumber else None,
+            'plumber_lon': plumber.lon if plumber else None
         })
     return render_template('customer_dashboard.html', bookings=booking_list)
 
@@ -315,6 +339,7 @@ def api_available_plumbers():
     work_type_norm = work_type.strip().lower()
     time_slot_norm = time_slot.strip().lower()
     language_norm = language.strip().lower() if language else None
+    base_price = WORK_TYPE_PRICING.get(work_type_norm, 400)  # Default base price if not found
     matching_plumbers = []
     for p in PlumberProfile.query.all():
         # Specialization match
@@ -339,6 +364,11 @@ def api_available_plumbers():
         else:
             dist = None
             eta = None
+        # Cost estimate
+        if dist is not None:
+            cost_estimate = int(base_price + 10 * dist)
+        else:
+            cost_estimate = base_price
         # Rating (average)
         reviews = Review.query.filter_by(plumber_id=p.id).all()
         avg_rating = round(sum(r.rating for r in reviews)/len(reviews), 1) if reviews else None
@@ -349,7 +379,8 @@ def api_available_plumbers():
             'languages': p.languages,
             'eta': eta if eta is not None else 'N/A',
             'distance': round(dist, 2) if dist is not None else 'N/A',
-            'rating': avg_rating
+            'rating': avg_rating,
+            'cost_estimate': cost_estimate
         })
     matching_plumbers = sorted(matching_plumbers, key=lambda x: (x['eta'] if x['eta'] != 'N/A' else 9999))
     return jsonify({'plumbers': matching_plumbers})
@@ -531,6 +562,96 @@ def update_availability():
     db.session.commit()
     flash('Availability updated.', 'success')
     return redirect(url_for('plumber_dashboard'))
+
+def create_sample_plumbers():
+    sample_data = [
+        {"name": "Ramesh Patel", "email": "ramesh1@example.com", "password": "plumber1", "district": "Ahmedabad", "specialization": "Leak Repair", "languages": "Gujarati, Hindi", "free_time_slots": "9am-12pm, 2pm-5pm", "lat": 23.0225, "lon": 72.5714},
+        {"name": "Suresh Shah", "email": "suresh2@example.com", "password": "plumber2", "district": "Surat", "specialization": "Installation", "languages": "Gujarati, English", "free_time_slots": "10am-1pm, 4pm-7pm", "lat": 21.1702, "lon": 72.8311},
+        {"name": "Mahesh Mehta", "email": "mahesh3@example.com", "password": "plumber3", "district": "Vadodara", "specialization": "Maintenance", "languages": "Gujarati, Hindi", "free_time_slots": "8am-11am, 3pm-6pm", "lat": 22.3072, "lon": 73.1812},
+        {"name": "Jignesh Desai", "email": "jignesh4@example.com", "password": "plumber4", "district": "Rajkot", "specialization": "Inspection", "languages": "Gujarati, English", "free_time_slots": "9am-12pm, 1pm-4pm", "lat": 22.3039, "lon": 70.8022},
+        {"name": "Paresh Joshi", "email": "paresh5@example.com", "password": "plumber5", "district": "Bhavnagar", "specialization": "Leak Repair", "languages": "Gujarati, Hindi", "free_time_slots": "10am-1pm, 5pm-8pm", "lat": 21.7645, "lon": 72.1519},
+        {"name": "Nilesh Trivedi", "email": "nilesh6@example.com", "password": "plumber6", "district": "Jamnagar", "specialization": "Installation", "languages": "Gujarati, Hindi", "free_time_slots": "8am-11am, 2pm-5pm", "lat": 22.4707, "lon": 70.0577},
+        {"name": "Dipak Pandya", "email": "dipak7@example.com", "password": "plumber7", "district": "Gandhinagar", "specialization": "Maintenance", "languages": "Gujarati, English", "free_time_slots": "9am-12pm, 3pm-6pm", "lat": 23.2156, "lon": 72.6369},
+        {"name": "Kiran Solanki", "email": "kiran8@example.com", "password": "plumber8", "district": "Junagadh", "specialization": "Inspection", "languages": "Gujarati, Hindi", "free_time_slots": "10am-1pm, 4pm-7pm", "lat": 21.5222, "lon": 70.4579},
+        {"name": "Vikas Parmar", "email": "vikas9@example.com", "password": "plumber9", "district": "Anand", "specialization": "Leak Repair", "languages": "Gujarati, Hindi", "free_time_slots": "8am-11am, 1pm-4pm", "lat": 22.5645, "lon": 72.9289},
+        {"name": "Manish Chauhan", "email": "manish10@example.com", "password": "plumber10", "district": "Navsari", "specialization": "Installation", "languages": "Gujarati, English", "free_time_slots": "9am-12pm, 2pm-5pm", "lat": 20.9467, "lon": 72.9520},
+        {"name": "Harshad Rana", "email": "harshad11@example.com", "password": "plumber11", "district": "Bharuch", "specialization": "Maintenance", "languages": "Gujarati, Hindi", "free_time_slots": "10am-1pm, 5pm-8pm", "lat": 21.7051, "lon": 72.9959},
+        {"name": "Sanjay Bhatt", "email": "sanjay12@example.com", "password": "plumber12", "district": "Mehsana", "specialization": "Inspection", "languages": "Gujarati, English", "free_time_slots": "8am-11am, 3pm-6pm", "lat": 23.5879, "lon": 72.3693},
+        {"name": "Ravi Gohil", "email": "ravi13@example.com", "password": "plumber13", "district": "Patan", "specialization": "Leak Repair", "languages": "Gujarati, Hindi", "free_time_slots": "9am-12pm, 1pm-4pm", "lat": 23.8506, "lon": 72.1261},
+        {"name": "Ajay Dave", "email": "ajay14@example.com", "password": "plumber14", "district": "Porbandar", "specialization": "Installation", "languages": "Gujarati, Hindi", "free_time_slots": "10am-1pm, 4pm-7pm", "lat": 21.6417, "lon": 69.6293}
+    ]
+    for p in sample_data:
+        if not User.query.filter_by(email=p["email"]).first():
+            user = User(
+                name=p["name"],
+                email=p["email"],
+                password_hash=generate_password_hash(p["password"]),
+                role="plumber"
+            )
+            db.session.add(user)
+            db.session.commit()
+            plumber_profile = PlumberProfile(
+                user_id=user.id,
+                district=p["district"],
+                specialization=p["specialization"],
+                languages=p["languages"],
+                free_time_slots=p["free_time_slots"],
+                lat=p["lat"],
+                lon=p["lon"]
+            )
+            db.session.add(plumber_profile)
+    db.session.commit()
+
+# Flask CLI command to populate sample plumbers
+@app.cli.command("create-sample-plumbers")
+def create_sample_plumbers_command():
+    """Populate the database with 10-15 sample plumbers."""
+    with app.app_context():
+        create_sample_plumbers()
+    print("Sample plumbers created.")
+
+@app.route('/calendar')
+@login_required
+def calendar_view():
+    # Render the calendar page for the current user
+    return render_template('calendar.html', user_role=current_user.role)
+
+@app.route('/api/calendar_events')
+@login_required
+def calendar_events():
+    events = []
+    if current_user.role == 'customer':
+        bookings = Booking.query.filter_by(customer_id=current_user.id).all()
+        for b in bookings:
+            plumber = PlumberProfile.query.get(b.plumber_id)
+            events.append({
+                'title': f"{b.service_type} with {plumber.user.name if plumber and plumber.user else 'Plumber'}",
+                'start': b.date.strftime('%Y-%m-%d'),
+                'allDay': True,
+                'status': b.status,
+                'time_slot': b.time_slot,
+                'plumber': plumber.user.name if plumber and plumber.user else 'N/A',
+            })
+    elif current_user.role == 'plumber':
+        plumber_profile = PlumberProfile.query.filter_by(user_id=current_user.id).first()
+        if plumber_profile:
+            bookings = Booking.query.filter_by(plumber_id=plumber_profile.id).all()
+            for b in bookings:
+                customer = User.query.get(b.customer_id)
+                events.append({
+                    'title': f"{b.service_type} for {customer.name if customer else 'Customer'}",
+                    'start': b.date.strftime('%Y-%m-%d'),
+                    'allDay': True,
+                    'status': b.status,
+                    'time_slot': b.time_slot,
+                    'customer': customer.name if customer else 'N/A',
+                })
+    return jsonify(events)
+
+@app.route('/all_emails')
+def all_emails():
+    emails = [u.email for u in User.query.all()]
+    return '<br>'.join(emails)
 
 if __name__ == '__main__':
     app.run(debug=True) 
