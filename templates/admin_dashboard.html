@@ -98,6 +98,28 @@
             </div>
         </div>
     </div>
+    
+    <!-- Navigation Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light rounded shadow-sm">
+                <div class="container-fluid">
+                    <span class="navbar-brand mb-0 h6">
+                        <i class="fa-solid fa-user-shield me-2"></i>Admin Panel
+                    </span>
+                    <div class="navbar-nav">
+                        <a class="nav-link active" href="/admin_dashboard">
+                            <i class="fa-solid fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                        <a class="nav-link" href="/admin/api_keys">
+                            <i class="fa-solid fa-key me-1"></i>API Keys
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+    
     <ul class="nav nav-pills mb-4" id="adminTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="users-tab" data-bs-toggle="pill" data-bs-target="#users" type="button" role="tab">Users</button>
@@ -110,6 +132,11 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="reviews-tab" data-bs-toggle="pill" data-bs-target="#reviews" type="button" role="tab">Reviews</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="attributes-tab" data-bs-toggle="pill" data-bs-target="#attributes" type="button" role="tab">
+                <i class="fa-solid fa-cogs me-1"></i>Attribute System
+            </button>
         </li>
     </ul>
     <div class="tab-content" id="adminTabsContent">
@@ -226,6 +253,292 @@
                 </table>
             </div>
         </div>
+        
+        <!-- Attribute System Management Tab -->
+        <div class="tab-pane fade" id="attributes" role="tabpanel">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fa-solid fa-cogs me-2"></i>Attribute System Management</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Add New Attribute Section -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h6 class="text-primary mb-3"><i class="fa-solid fa-plus me-2"></i>Add New Attribute</h6>
+                                    <form method="POST" action="/admin/add_attribute" class="row g-3">
+                                        <div class="col-md-3">
+                                            <label for="attr_name" class="form-label">Attribute Name</label>
+                                            <input type="text" class="form-control" id="attr_name" name="name" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="attr_category" class="form-label">Category</label>
+                                            <select class="form-select" id="attr_category" name="category" required>
+                                                <option value="basic">Basic</option>
+                                                <option value="professional">Professional</option>
+                                                <option value="logistical">Logistical</option>
+                                                <option value="quality">Quality</option>
+                                                <option value="financial">Financial</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="attr_type" class="form-label">Type</label>
+                                            <select class="form-select" id="attr_type" name="type" required>
+                                                <option value="required">Required</option>
+                                                <option value="preferred">Preferred</option>
+                                                <option value="optional">Optional</option>
+                                                <option value="negative">Negative</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="attr_weight" class="form-label">Weight</label>
+                                            <input type="number" class="form-control" id="attr_weight" name="weight" min="0" max="2" step="0.1" value="0.7" required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="attr_description" class="form-label">Description</label>
+                                            <input type="text" class="form-control" id="attr_description" name="description" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row g-3">
+                                                <div class="col-md-4">
+                                                    <label for="attr_values" class="form-label">Possible Values (comma-separated)</label>
+                                                    <input type="text" class="form-control" id="attr_values" name="possible_values" placeholder="Value1, Value2, Value3">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label for="attr_min" class="form-label">Min Value</label>
+                                                    <input type="number" class="form-control" id="attr_min" name="min_value" step="0.1">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label for="attr_max" class="form-label">Max Value</label>
+                                                    <input type="number" class="form-control" id="attr_max" name="max_value" step="0.1">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label for="attr_unit" class="form-label">Unit</label>
+                                                    <input type="text" class="form-control" id="attr_unit" name="unit" placeholder="km, years, etc.">
+                                                </div>
+                                                <div class="col-md-2 d-flex align-items-end">
+                                                    <button type="submit" class="btn btn-success w-100">
+                                                        <i class="fa-solid fa-plus me-1"></i>Add Attribute
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <!-- Existing Attributes Management -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="text-primary mb-3"><i class="fa-solid fa-list me-2"></i>Manage Existing Attributes</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Category</th>
+                                                    <th>Type</th>
+                                                    <th>Weight</th>
+                                                    <th>Description</th>
+                                                    <th>Values/Range</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="attributesTableBody">
+                                                <!-- Attributes will be loaded dynamically -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Attribute Statistics -->
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="text-primary mb-3"><i class="fa-solid fa-chart-bar me-2"></i>Attribute System Statistics</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <div class="card bg-primary text-white">
+                                                <div class="card-body text-center">
+                                                    <h4 id="totalAttributes">-</h4>
+                                                    <p class="mb-0">Total Attributes</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="card bg-success text-white">
+                                                <div class="card-body text-center">
+                                                    <h4 id="requiredAttributes">-</h4>
+                                                    <p class="mb-0">Required</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="card bg-info text-white">
+                                                <div class="card-body text-center">
+                                                    <h4 id="preferredAttributes">-</h4>
+                                                    <p class="mb-0">Preferred</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="card bg-warning text-dark">
+                                                <div class="card-body text-center">
+                                                    <h4 id="optionalAttributes">-</h4>
+                                                    <p class="mb-0">Optional</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">Attributes by Category</h6>
+                                                    <canvas id="categoryChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">Weight Distribution</h6>
+                                                    <canvas id="weightChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Bulk Operations and Import/Export -->
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="text-primary mb-3"><i class="fa-solid fa-tools me-2"></i>Bulk Operations & Import/Export</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-body text-center">
+                                                    <h6 class="card-title">Export Configuration</h6>
+                                                    <p class="text-muted">Download current attribute system configuration</p>
+                                                    <button class="btn btn-outline-primary" onclick="exportAttributes()">
+                                                        <i class="fa-solid fa-download me-1"></i>Export JSON
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-body text-center">
+                                                    <h6 class="card-title">Import Configuration</h6>
+                                                    <p class="text-muted">Upload attribute system configuration</p>
+                                                    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importAttributes(this)">
+                                                    <button class="btn btn-outline-success" onclick="document.getElementById('importFile').click()">
+                                                        <i class="fa-solid fa-upload me-1"></i>Import JSON
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-body text-center">
+                                                    <h6 class="card-title">Reset to Default</h6>
+                                                    <p class="text-muted">Restore default attribute configuration</p>
+                                                    <button class="btn btn-outline-warning" onclick="resetToDefault()">
+                                                        <i class="fa-solid fa-undo me-1"></i>Reset
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Attribute System Testing -->
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="text-primary mb-3"><i class="fa-solid fa-flask me-2"></i>Test Attribute System</h6>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <h6>Test Customer Preferences</h6>
+                                                    <form id="testForm">
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Work Type</label>
+                                                            <select class="form-select" name="work_type">
+                                                                <option value="">Select work type</option>
+                                                                <option value="Bathroom Fitting">Bathroom Fitting</option>
+                                                                <option value="Kitchen Plumbing">Kitchen Plumbing</option>
+                                                                <option value="Leak Repair">Leak Repair</option>
+                                                                <option value="Pipe Installation">Pipe Installation</option>
+                                                                <option value="Water Tank Cleaning">Water Tank Cleaning</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">District</label>
+                                                            <select class="form-select" name="district">
+                                                                <option value="">Select district</option>
+                                                                <option value="Ahmedabad">Ahmedabad</option>
+                                                                <option value="Surat">Surat</option>
+                                                                <option value="Vadodara">Vadodara</option>
+                                                                <option value="Rajkot">Rajkot</option>
+                                                                <option value="Bhavnagar">Bhavnagar</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Language</label>
+                                                            <select class="form-select" name="language">
+                                                                <option value="">Select language</option>
+                                                                <option value="Gujarati">Gujarati</option>
+                                                                <option value="Hindi">Hindi</option>
+                                                                <option value="English">English</option>
+                                                                <option value="Marathi">Marathi</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Experience Years (min)</label>
+                                                            <input type="number" class="form-control" name="experience_years" min="0" max="20">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Maximum Cost (₹)</label>
+                                                            <input type="number" class="form-control" name="max_cost" min="100" max="2000">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Client Latitude</label>
+                                                            <input type="number" class="form-control" name="client_lat" step="0.000001" value="23.0225">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Client Longitude</label>
+                                                            <input type="number" class="form-control" name="client_lon" step="0.000001" value="72.5714">
+                                                        </div>
+                                                        <button type="button" class="btn btn-primary" onclick="testAttributeSystem()">
+                                                            <i class="fa-solid fa-play me-1"></i>Test Matching
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6>Test Results</h6>
+                                                    <div id="testResults" class="border rounded p-3" style="min-height: 300px; max-height: 400px; overflow-y: auto;">
+                                                        <p class="text-muted">Click "Test Matching" to see results...</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -265,6 +578,423 @@ new Chart(document.getElementById('topPlumbersChart'), {
     },
     options: {responsive: true}
 });
+
+// Attribute System Management
+document.addEventListener('DOMContentLoaded', function() {
+    // Load attributes when the attributes tab is clicked
+    document.getElementById('attributes-tab').addEventListener('click', function() {
+        loadAttributes();
+    });
+    
+    // Load attributes on page load if attributes tab is active
+    if (window.location.hash === '#attributes' || document.getElementById('attributes-tab').classList.contains('active')) {
+        loadAttributes();
+    }
+});
+
+function loadAttributes() {
+    fetch('/admin/get_attributes')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('attributesTableBody');
+            tbody.innerHTML = '';
+            
+            data.attributes.forEach(attr => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${attr.name}</strong></td>
+                    <td><span class="badge bg-secondary">${attr.category}</span></td>
+                    <td><span class="badge bg-${getTypeBadgeColor(attr.type)}">${attr.type}</span></td>
+                    <td>${attr.weight}</td>
+                    <td>${attr.description}</td>
+                    <td>${formatAttributeValues(attr)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editAttribute('${attr.name}')" title="Edit">
+                            <i class="fa-solid fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteAttribute('${attr.name}')" title="Delete">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Load statistics after loading attributes
+            loadAttributeStats();
+        })
+        .catch(error => {
+            console.error('Error loading attributes:', error);
+            document.getElementById('attributesTableBody').innerHTML = 
+                '<tr><td colspan="7" class="text-center text-danger">Error loading attributes</td></tr>';
+        });
+}
+
+function loadAttributeStats() {
+    fetch('/admin/attribute_stats')
+        .then(response => response.json())
+        .then(data => {
+            // Update summary cards
+            document.getElementById('totalAttributes').textContent = data.total_attributes;
+            document.getElementById('requiredAttributes').textContent = data.by_type.required || 0;
+            document.getElementById('preferredAttributes').textContent = data.by_type.preferred || 0;
+            document.getElementById('optionalAttributes').textContent = data.by_type.optional || 0;
+            
+            // Create category chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(data.by_category),
+                    datasets: [{
+                        data: Object.values(data.by_category),
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Create weight distribution chart
+            const weightCtx = document.getElementById('weightChart').getContext('2d');
+            new Chart(weightCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Low (0-0.5)', 'Medium (0.5-1.0)', 'High (1.0-2.0)'],
+                    datasets: [{
+                        label: 'Number of Attributes',
+                        data: [
+                            data.weight_distribution.low,
+                            data.weight_distribution.medium,
+                            data.weight_distribution.high
+                        ],
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#4BC0C0'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading attribute stats:', error);
+        });
+}
+
+function getTypeBadgeColor(type) {
+    switch(type) {
+        case 'required': return 'danger';
+        case 'preferred': return 'primary';
+        case 'optional': return 'warning';
+        case 'negative': return 'dark';
+        default: return 'secondary';
+    }
+}
+
+function formatAttributeValues(attr) {
+    if (attr.possible_values && attr.possible_values.length > 0) {
+        return attr.possible_values.join(', ');
+    } else if (attr.min_value !== null && attr.max_value !== null) {
+        return `${attr.min_value} - ${attr.max_value} ${attr.unit || ''}`;
+    } else if (attr.min_value !== null) {
+        return `≥ ${attr.min_value} ${attr.unit || ''}`;
+    } else if (attr.max_value !== null) {
+        return `≤ ${attr.max_value} ${attr.unit || ''}`;
+    }
+    return 'Any';
+}
+
+function editAttribute(attrName) {
+    // Create a modal for editing
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'editAttributeModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Attribute: ${attrName}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editAttributeForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Name</label>
+                                <input type="text" class="form-control" name="name" value="${attrName}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Category</label>
+                                <select class="form-select" name="category" required>
+                                    <option value="basic">Basic</option>
+                                    <option value="professional">Professional</option>
+                                    <option value="logistical">Logistical</option>
+                                    <option value="quality">Quality</option>
+                                    <option value="financial">Financial</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Type</label>
+                                <select class="form-select" name="type" required>
+                                    <option value="required">Required</option>
+                                    <option value="preferred">Preferred</option>
+                                    <option value="optional">Optional</option>
+                                    <option value="negative">Negative</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Weight</label>
+                                <input type="number" class="form-control" name="weight" min="0" max="2" step="0.1" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Description</label>
+                                <input type="text" class="form-control" name="description" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Possible Values (comma-separated)</label>
+                                <input type="text" class="form-control" name="possible_values">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Min Value</label>
+                                <input type="number" class="form-control" name="min_value" step="0.1">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Max Value</label>
+                                <input type="number" class="form-control" name="max_value" step="0.1">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Unit</label>
+                                <input type="text" class="form-control" name="unit">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveAttributeEdit()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Load current attribute data
+    fetch(`/admin/get_attribute/${encodeURIComponent(attrName)}`)
+        .then(response => response.json())
+        .then(data => {
+            const form = document.getElementById('editAttributeForm');
+            form.querySelector('[name=category]').value = data.category;
+            form.querySelector('[name=type]').value = data.type;
+            form.querySelector('[name=weight]').value = data.weight;
+            form.querySelector('[name=description]').value = data.description;
+            form.querySelector('[name=possible_values]').value = data.possible_values ? data.possible_values.join(', ') : '';
+            form.querySelector('[name=min_value]').value = data.min_value || '';
+            form.querySelector('[name=max_value]').value = data.max_value || '';
+            form.querySelector('[name=unit]').value = data.unit || '';
+        });
+    
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+}
+
+function saveAttributeEdit() {
+    const form = document.getElementById('editAttributeForm');
+    const formData = new FormData(form);
+    
+    fetch('/admin/update_attribute', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editAttributeModal')).hide();
+            loadAttributes();
+            showNotification('Attribute updated successfully!', 'success');
+        } else {
+            showNotification('Error updating attribute: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Error updating attribute', 'danger');
+    });
+}
+
+function deleteAttribute(attrName) {
+    if (confirm(`Are you sure you want to delete the attribute "${attrName}"? This action cannot be undone.`)) {
+        fetch('/admin/delete_attribute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({name: attrName})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadAttributes();
+                showNotification('Attribute deleted successfully!', 'success');
+            } else {
+                showNotification('Error deleting attribute: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            showNotification('Error deleting attribute', 'danger');
+        });
+    }
+}
+
+function showNotification(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 5000);
+}
+
+function exportAttributes() {
+    fetch('/admin/get_attributes')
+        .then(response => response.json())
+        .then(data => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `attribute_system_config_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showNotification('Attribute configuration exported successfully!', 'success');
+        })
+        .catch(error => {
+            showNotification('Error exporting attributes', 'danger');
+        });
+}
+
+function importAttributes(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const config = JSON.parse(e.target.result);
+            
+            if (!config.attributes || !Array.isArray(config.attributes)) {
+                showNotification('Invalid configuration file format', 'danger');
+                return;
+            }
+            
+            if (confirm(`Import ${config.attributes.length} attributes? This will replace the current configuration.`)) {
+                fetch('/admin/import_attributes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(config)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadAttributes();
+                        showNotification('Attribute configuration imported successfully!', 'success');
+                    } else {
+                        showNotification('Error importing attributes: ' + data.error, 'danger');
+                    }
+                })
+                .catch(error => {
+                    showNotification('Error importing attributes', 'danger');
+                });
+            }
+        } catch (error) {
+            showNotification('Invalid JSON file', 'danger');
+        }
+    };
+    reader.readAsText(file);
+    input.value = ''; // Reset file input
+}
+
+function resetToDefault() {
+    if (confirm('Are you sure you want to reset the attribute system to default configuration? This action cannot be undone.')) {
+        fetch('/admin/reset_attributes', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadAttributes();
+                showNotification('Attribute system reset to default configuration!', 'success');
+            } else {
+                showNotification('Error resetting attributes: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            showNotification('Error resetting attributes', 'danger');
+        });
+    }
+}
+
+function testAttributeSystem() {
+    const form = document.getElementById('testForm');
+    const formData = new FormData(form);
+    
+    fetch('/admin/test_attribute_system', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const testResultsDiv = document.getElementById('testResults');
+            testResultsDiv.innerHTML = data.results;
+            showNotification('Attribute system test completed successfully!', 'success');
+        } else {
+            showNotification('Error testing attribute system: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Error testing attribute system', 'danger');
+    });
+}
 </script>
 </body>
 </html> 

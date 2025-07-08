@@ -4,12 +4,15 @@ from flask_cors import CORS
 import math
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from models import db, User, PlumberProfile, Booking, Review
+from models import db, User, PlumberProfile, Booking, Review, APIKey
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import and_, or_
 from collections import defaultdict, Counter
+from attribute_system import DynamicAttributeSystem, AttributeCategory, AttributeDefinition, AttributeType
+import json
+import functools
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
@@ -27,11 +30,392 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Initialize dynamic attribute system
+attribute_system = DynamicAttributeSystem()
+
 # Create tables if not exist
 with app.app_context():
     db.create_all()
 
-df = pd.read_csv('gujarat_plumbers_dataset.csv')
+# Load enhanced dataset
+try:
+    df = pd.read_csv('enhanced_plumbers_dataset.csv')
+    attribute_system.load_dataset('enhanced_plumbers_dataset.csv')
+except FileNotFoundError:
+    # Fallback to original dataset
+    df = pd.read_csv('gujarat_plumbers_dataset.csv')
+    print("Warning: Using original dataset. Enhanced dataset not found.")
+
+# Custom Jinja2 filter to parse JSON strings
+@app.template_filter('from_json')
+def from_json_filter(s):
+    try:
+        return json.loads(s) if s else []
+    except Exception:
+        return []
+
+# API Key Authentication Decorator
+def require_api_key(permissions=None):
+    def decorator(f):
+        @functools.wraps(f)
+        def decorated_function(*args, **kwargs):
+            api_key = request.headers.get('X-API-Key') or request.args.get('api_key')
+            
+            if not api_key:
+                return jsonify({'error': 'API key required'}), 401
+            
+            # Find the API key
+            api_key_obj = APIKey.query.filter_by(is_active=True).all()
+            valid_key = None
+            
+            for key_obj in api_key_obj:
+                if key_obj.check_key(api_key):
+                    valid_key = key_obj
+                    break
+            
+            if not valid_key:
+                return jsonify({'error': 'Invalid API key'}), 401
+            
+            # Check rate limiting
+            if valid_key.last_used:
+                time_diff = datetime.utcnow() - valid_key.last_used
+                if time_diff < timedelta(hours=1):
+                    # Simple rate limiting - in production, use Redis or similar
+                    return jsonify({'error': 'Rate limit exceeded'}), 429
+            
+            # Check permissions if specified
+            if permissions:
+                key_permissions = json.loads(valid_key.permissions or '[]')
+                if not any(perm in key_permissions for perm in permissions):
+                    return jsonify({'error': 'Insufficient permissions'}), 403
+            
+            # Update last used timestamp
+            valid_key.last_used = datetime.utcnow()
+            db.session.commit()
+            
+            # Add API key info to request context
+            request.api_key = valid_key
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# Third-party API endpoints for attribute allocation
+@app.route('/api/v1/attributes', methods=['GET'])
+@require_api_key(['read_attributes'])
+def api_get_attributes():
+    """Get all available attributes"""
+    try:
+        categories = {}
+        for category in AttributeCategory:
+            attributes = attribute_system.get_attributes_by_category(category)
+            categories[category.value] = [
+                {
+                    'name': attr.name,
+                    'description': attr.description,
+                    'possible_values': attr.possible_values,
+                    'min_value': attr.min_value,
+                    'max_value': attr.max_value,
+                    'unit': attr.unit,
+                    'type': attr.type.value,
+                    'weight': attr.weight
+                }
+                for attr in attributes.values()
+            ]
+        return jsonify({
+            'success': True,
+            'data': categories,
+            'total_attributes': sum(len(attrs) for attrs in categories.values())
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v1/attributes', methods=['POST'])
+@require_api_key(['write_attributes'])
+def api_create_attribute():
+    """Create a new attribute"""
+    try:
+        data = request.json
+        
+        # Validate required fields
+        required_fields = ['name', 'category', 'type']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Create attribute definition
+        attr_def = AttributeDefinition(
+            name=data['name'],
+            description=data.get('description', ''),
+            category=AttributeCategory(data['category']),
+            type=AttributeType(data['type']),
+            weight=float(data.get('weight', 1.0)),
+            possible_values=data.get('possible_values', []),
+            min_value=data.get('min_value'),
+            max_value=data.get('max_value'),
+            unit=data.get('unit')
+        )
+        
+        # Add to attribute system
+        attribute_system.add_attribute(attr_def)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Attribute "{data["name"]}" created successfully',
+            'attribute': {
+                'name': attr_def.name,
+                'category': attr_def.category.value,
+                'type': attr_def.type.value,
+                'weight': attr_def.weight
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v1/attributes/<attr_name>', methods=['PUT'])
+@require_api_key(['write_attributes'])
+def api_update_attribute(attr_name):
+    """Update an existing attribute"""
+    try:
+        data = request.json
+        
+        # Get existing attribute
+        existing_attr = attribute_system.get_attribute(attr_name)
+        if not existing_attr:
+            return jsonify({'error': f'Attribute "{attr_name}" not found'}), 404
+        
+        # Update fields
+        if 'description' in data:
+            existing_attr.description = data['description']
+        if 'weight' in data:
+            existing_attr.weight = float(data['weight'])
+        if 'possible_values' in data:
+            existing_attr.possible_values = data['possible_values']
+        if 'min_value' in data:
+            existing_attr.min_value = data['min_value']
+        if 'max_value' in data:
+            existing_attr.max_value = data['max_value']
+        if 'unit' in data:
+            existing_attr.unit = data['unit']
+        
+        # Update in attribute system
+        attribute_system.update_attribute(attr_name, existing_attr)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Attribute "{attr_name}" updated successfully'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v1/attributes/<attr_name>', methods=['DELETE'])
+@require_api_key(['write_attributes'])
+def api_delete_attribute(attr_name):
+    """Delete an attribute"""
+    try:
+        # Check if attribute exists
+        existing_attr = attribute_system.get_attribute(attr_name)
+        if not existing_attr:
+            return jsonify({'error': f'Attribute "{attr_name}" not found'}), 404
+        
+        # Delete from attribute system
+        attribute_system.remove_attribute(attr_name)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Attribute "{attr_name}" deleted successfully'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v1/attributes/batch', methods=['POST'])
+@require_api_key(['write_attributes'])
+def api_batch_update_attributes():
+    """Batch update multiple attributes"""
+    try:
+        data = request.json
+        
+        if 'attributes' not in data:
+            return jsonify({'error': 'Missing attributes array'}), 400
+        
+        results = []
+        for attr_data in data['attributes']:
+            try:
+                attr_name = attr_data.get('name')
+                if not attr_name:
+                    results.append({'name': 'unknown', 'status': 'error', 'message': 'Missing name'})
+                    continue
+                
+                existing_attr = attribute_system.get_attribute(attr_name)
+                if existing_attr:
+                    # Update existing attribute
+                    if 'weight' in attr_data:
+                        existing_attr.weight = float(attr_data['weight'])
+                    if 'description' in attr_data:
+                        existing_attr.description = attr_data['description']
+                    
+                    attribute_system.update_attribute(attr_name, existing_attr)
+                    results.append({'name': attr_name, 'status': 'updated'})
+                else:
+                    results.append({'name': attr_name, 'status': 'error', 'message': 'Attribute not found'})
+            except Exception as e:
+                results.append({'name': attr_name, 'status': 'error', 'message': str(e)})
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'summary': {
+                'total': len(results),
+                'updated': len([r for r in results if r['status'] == 'updated']),
+                'errors': len([r for r in results if r['status'] == 'error'])
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v1/match', methods=['POST'])
+@require_api_key(['read_attributes', 'match_plumbers'])
+def api_match_plumbers():
+    """Match plumbers based on customer preferences"""
+    try:
+        data = request.json
+        
+        if 'preferences' not in data:
+            return jsonify({'error': 'Missing preferences object'}), 400
+        
+        customer_preferences = data['preferences']
+        max_results = data.get('max_results', 10)
+        
+        # Use the dynamic attribute system to match plumbers
+        matched_plumbers = attribute_system.match_plumbers(customer_preferences, max_results=max_results)
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'plumbers': matched_plumbers,
+                'total_found': len(matched_plumbers),
+                'preferences_used': list(customer_preferences.keys())
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v1/attributes/export', methods=['GET'])
+@require_api_key(['read_attributes'])
+def api_export_attributes():
+    """Export all attributes configuration"""
+    try:
+        config = attribute_system.export_configuration()
+        return jsonify({
+            'success': True,
+            'data': config,
+            'exported_at': datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v1/attributes/import', methods=['POST'])
+@require_api_key(['write_attributes'])
+def api_import_attributes():
+    """Import attributes configuration"""
+    try:
+        data = request.json
+        
+        if 'attributes' not in data:
+            return jsonify({'error': 'Missing attributes configuration'}), 400
+        
+        # Import configuration
+        attribute_system.import_configuration(data)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Attributes imported successfully',
+            'imported_at': datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Admin API key management endpoints
+@app.route('/admin/api_keys', methods=['GET'])
+@login_required
+def admin_api_keys():
+    """Admin page for managing API keys"""
+    if current_user.role != 'admin':
+        return redirect(url_for('admin_dashboard'))
+    
+    api_keys = APIKey.query.all()
+    return render_template('admin_api_keys.html', api_keys=api_keys)
+
+@app.route('/admin/api_keys', methods=['POST'])
+@login_required
+def create_api_key():
+    """Create a new API key"""
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        data = request.json
+        
+        # Generate new API key
+        api_key_value = APIKey.generate_key()
+        key_hash = APIKey.hash_key(api_key_value)
+        
+        # Create API key record
+        api_key = APIKey(
+            name=data['name'],
+            key_hash=key_hash,
+            description=data.get('description', ''),
+            permissions=json.dumps(data.get('permissions', [])),
+            rate_limit=int(data.get('rate_limit', 1000)),
+            created_by=current_user.id
+        )
+        
+        db.session.add(api_key)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'api_key': api_key_value,  # Only returned once
+            'message': 'API key created successfully'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/api_keys/<int:key_id>', methods=['DELETE'])
+@login_required
+def delete_api_key(key_id):
+    """Delete an API key"""
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        api_key = APIKey.query.get_or_404(key_id)
+        db.session.delete(api_key)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'API key deleted successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/api_keys/<int:key_id>/toggle', methods=['POST'])
+@login_required
+def toggle_api_key(key_id):
+    """Toggle API key active status"""
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        api_key = APIKey.query.get_or_404(key_id)
+        api_key.is_active = not api_key.is_active
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'is_active': api_key.is_active,
+            'message': f'API key {"activated" if api_key.is_active else "deactivated"} successfully'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # Haversine formula to calculate distance between two lat/lon points in km
 def haversine(lat1, lon1, lat2, lon2):
@@ -56,6 +440,147 @@ WORK_TYPE_PRICING = {
 @app.route('/')
 def index():
     return redirect(url_for('login'))
+
+@app.route('/dynamic_booking')
+@login_required
+def dynamic_booking():
+    """New dynamic booking interface"""
+    if current_user.role != 'customer':
+        return redirect(url_for('login'))
+    return render_template('dynamic_booking.html')
+
+@app.route('/api/time_slots')
+def api_time_slots():
+    """API endpoint to get available time slots"""
+    time_slots = sorted(set(slot.strip() for slots in df['Free_Time_Slots'] for slot in str(slots).split(',')))
+    return jsonify({'time_slots': time_slots})
+
+@app.route('/api/districts')
+def api_districts():
+    """API endpoint to get available districts"""
+    districts = sorted(df['District'].unique())
+    return jsonify({'districts': districts})
+
+@app.route('/api/attribute_categories')
+def api_attribute_categories():
+    """API endpoint to get attribute categories"""
+    categories = {}
+    for category in AttributeCategory:
+        attributes = attribute_system.get_attributes_by_category(category)
+        categories[category.value] = [
+            {
+                'name': attr.name,
+                'description': attr.description,
+                'possible_values': attr.possible_values,
+                'min_value': attr.min_value,
+                'max_value': attr.max_value,
+                'unit': attr.unit,
+                'type': attr.type.value
+            }
+            for attr in attributes.values()
+        ]
+    return jsonify({'categories': categories})
+
+@app.route('/api/dynamic_match_plumbers', methods=['POST'])
+def api_dynamic_match_plumbers():
+    """API endpoint for dynamic plumber matching"""
+    try:
+        print("🔍 API called: /api/dynamic_match_plumbers")
+        data = request.json
+        print(f"📋 Received data: {data}")
+        
+        # Extract basic requirements
+        customer_preferences = {
+            'client_lat': float(data.get('client_lat', 0)),
+            'client_lon': float(data.get('client_lon', 0))
+        }
+        
+        # Add work_type if specified
+        if data.get('work_type'):
+            customer_preferences['work_type'] = data.get('work_type')
+        
+        # Add district if specified
+        if data.get('district') and data.get('district') != '':
+            customer_preferences['district'] = data.get('district')
+        
+        # Add language if specified
+        if data.get('language') and data.get('language') != '':
+            customer_preferences['language'] = data.get('language')
+        
+        # Add dynamic attributes
+        for key, value in data.items():
+            if key not in ['date', 'time_slot', 'work_type', 'district', 'language', 'client_lat', 'client_lon']:
+                if value and value != '':
+                    customer_preferences[key] = value
+        
+        print(f"🎯 Customer preferences: {customer_preferences}")
+        
+        # Use the dynamic attribute system to match plumbers
+        matched_plumbers = attribute_system.match_plumbers(customer_preferences, max_results=20)
+        print(f"✅ Found {len(matched_plumbers)} plumbers")
+        
+        # Add additional information for display
+        for plumber in matched_plumbers:
+            # Calculate ETA
+            if customer_preferences.get('client_lat') and customer_preferences.get('client_lon'):
+                distance = plumber.get('Distance_km', 0)
+                plumber['eta'] = int(distance / 40 * 60)  # 40 km/h average speed
+            
+            # Calculate cost estimate
+            work_type = plumber.get('Work_Specialization', '').lower()
+            base_price = WORK_TYPE_PRICING.get(work_type, 400)
+            distance = plumber.get('Distance_km', 0)
+            cost_estimate = int(base_price + 10 * distance)
+            plumber['cost_estimate'] = cost_estimate
+        
+        response_data = {
+            'plumbers': matched_plumbers,
+            'total_found': len(matched_plumbers)
+        }
+        print(f"📤 Sending response with {len(matched_plumbers)} plumbers")
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"❌ Error in API: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/confirm_booking', methods=['POST'])
+@login_required
+def api_confirm_booking():
+    """API endpoint to confirm booking"""
+    try:
+        data = request.json
+        
+        # Find the plumber by name
+        plumber_name = data.get('plumber_name')
+        plumber_row = df[df['Name'] == plumber_name]
+        
+        if plumber_row.empty:
+            return jsonify({'success': False, 'error': 'Plumber not found'})
+        
+        plumber_data = plumber_row.iloc[0]
+        
+        # Create booking
+        booking = Booking(
+            customer_id=current_user.id,
+            plumber_id=1,  # You might need to map this properly
+            date=datetime.strptime(data.get('date'), '%Y-%m-%d').date(),
+            time_slot=data.get('time_slot'),
+            service_type=data.get('work_type'),
+            client_lat=float(data.get('client_lat', 0)),
+            client_lon=float(data.get('client_lon', 0)),
+            status='pending'
+        )
+        
+        db.session.add(booking)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'booking_id': booking.id})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/find_plumbers', methods=['POST'])
 def find_plumbers():
@@ -325,66 +850,6 @@ def delete_review(review_id):
     flash('Review deleted.', 'success')
     return redirect(url_for('admin_dashboard'))
 
-@app.route('/api/available_plumbers', methods=['POST'])
-def api_available_plumbers():
-    data = request.get_json()
-    date = data.get('date')
-    time_slot = data.get('time_slot')
-    work_type = data.get('work_type')
-    language = data.get('language')
-    client_lat = data.get('client_lat')
-    client_lon = data.get('client_lon')
-    if not all([date, time_slot, work_type, client_lat, client_lon]):
-        return jsonify({'error': 'Missing required fields.'}), 400
-    work_type_norm = work_type.strip().lower()
-    time_slot_norm = time_slot.strip().lower()
-    language_norm = language.strip().lower() if language else None
-    base_price = WORK_TYPE_PRICING.get(work_type_norm, 400)  # Default base price if not found
-    matching_plumbers = []
-    for p in PlumberProfile.query.all():
-        # Specialization match
-        if not p.specialization or p.specialization.strip().lower() != work_type_norm:
-            continue
-        # Time slot match
-        slots = [s.strip().lower() for s in (p.free_time_slots or '').split(',')]
-        if not p.free_time_slots or time_slot_norm not in slots:
-            continue
-        # Language match (if not Any)
-        if language and language != 'Any':
-            langs = [l.strip().lower() for l in (p.languages or '').split(',')]
-            if language_norm not in langs:
-                continue
-        # Already booked?
-        if Booking.query.filter_by(plumber_id=p.id, date=date, time_slot=time_slot).first():
-            continue
-        # Distance/ETA
-        if p.lat is not None and p.lon is not None:
-            dist = haversine(float(client_lat), float(client_lon), p.lat, p.lon)
-            eta = int(round(dist / 40 * 60))
-        else:
-            dist = None
-            eta = None
-        # Cost estimate
-        if dist is not None:
-            cost_estimate = int(base_price + 10 * dist)
-        else:
-            cost_estimate = base_price
-        # Rating (average)
-        reviews = Review.query.filter_by(plumber_id=p.id).all()
-        avg_rating = round(sum(r.rating for r in reviews)/len(reviews), 1) if reviews else None
-        matching_plumbers.append({
-            'id': p.id,
-            'name': p.user.name if p.user else 'N/A',
-            'specialization': p.specialization,
-            'languages': p.languages,
-            'eta': eta if eta is not None else 'N/A',
-            'distance': round(dist, 2) if dist is not None else 'N/A',
-            'rating': avg_rating,
-            'cost_estimate': cost_estimate
-        })
-    matching_plumbers = sorted(matching_plumbers, key=lambda x: (x['eta'] if x['eta'] != 'N/A' else 9999))
-    return jsonify({'plumbers': matching_plumbers})
-
 @app.route('/book_plumber', methods=['GET', 'POST'])
 @login_required
 def book_plumber():
@@ -650,8 +1115,543 @@ def calendar_events():
 
 @app.route('/all_emails')
 def all_emails():
-    emails = [u.email for u in User.query.all()]
-    return '<br>'.join(emails)
+    users = User.query.all()
+    emails = [user.email for user in users]
+    return jsonify(emails)
+
+# Attribute System Management Routes
+@app.route('/admin/get_attributes', methods=['GET'])
+@login_required
+def get_attributes():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        from attribute_system import DynamicAttributeSystem
+        attr_system = DynamicAttributeSystem()
+        
+        # Load dataset if not already loaded
+        try:
+            # Try to load enhanced dataset first
+            attr_system.load_dataset('enhanced_plumbers_dataset.csv')
+        except FileNotFoundError:
+            try:
+                # Fallback to original dataset
+                attr_system.load_dataset('gujarat_plumbers_dataset.csv')
+            except FileNotFoundError:
+                # If no dataset is available, still return attributes (they exist in the system)
+                pass
+        
+        attributes = attr_system.get_available_attributes()
+        
+        # Convert to JSON-serializable format
+        attr_list = []
+        for name, attr_def in attributes.items():
+            attr_data = {
+                'name': attr_def.name,
+                'category': attr_def.category.value,
+                'type': attr_def.type.value,
+                'weight': attr_def.weight,
+                'description': attr_def.description,
+                'possible_values': attr_def.possible_values,
+                'min_value': attr_def.min_value,
+                'max_value': attr_def.max_value,
+                'unit': attr_def.unit
+            }
+            attr_list.append(attr_data)
+        
+        return jsonify({'attributes': attr_list})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/get_attribute/<attr_name>', methods=['GET'])
+@login_required
+def get_attribute(attr_name):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        from attribute_system import DynamicAttributeSystem
+        attr_system = DynamicAttributeSystem()
+        
+        # Load dataset if not already loaded
+        try:
+            # Try to load enhanced dataset first
+            attr_system.load_dataset('enhanced_plumbers_dataset.csv')
+        except FileNotFoundError:
+            try:
+                # Fallback to original dataset
+                attr_system.load_dataset('gujarat_plumbers_dataset.csv')
+            except FileNotFoundError:
+                # If no dataset is available, still return attributes (they exist in the system)
+                pass
+        
+        attributes = attr_system.get_available_attributes()
+        
+        if attr_name not in attributes:
+            return jsonify({'error': 'Attribute not found'}), 404
+        
+        attr_def = attributes[attr_name]
+        attr_data = {
+            'name': attr_def.name,
+            'category': attr_def.category.value,
+            'type': attr_def.type.value,
+            'weight': attr_def.weight,
+            'description': attr_def.description,
+            'possible_values': attr_def.possible_values,
+            'min_value': attr_def.min_value,
+            'max_value': attr_def.max_value,
+            'unit': attr_def.unit
+        }
+        
+        return jsonify(attr_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/add_attribute', methods=['POST'])
+@login_required
+def add_attribute():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        attr_system = DynamicAttributeSystem()
+        
+        # Get form data
+        name = request.form.get('name').strip()
+        category = request.form.get('category')
+        attr_type = request.form.get('type')
+        weight = float(request.form.get('weight'))
+        description = request.form.get('description').strip()
+        possible_values_str = request.form.get('possible_values', '').strip()
+        min_value_str = request.form.get('min_value', '').strip()
+        max_value_str = request.form.get('max_value', '').strip()
+        unit = request.form.get('unit', '').strip()
+        
+        # Validate required fields
+        if not name or not description:
+            return jsonify({'error': 'Name and description are required'}), 400
+        
+        # Parse possible values
+        possible_values = None
+        if possible_values_str:
+            possible_values = [v.strip() for v in possible_values_str.split(',') if v.strip()]
+        
+        # Parse numeric values
+        min_value = None
+        max_value = None
+        if min_value_str:
+            try:
+                min_value = float(min_value_str)
+            except ValueError:
+                return jsonify({'error': 'Invalid min value'}), 400
+        
+        if max_value_str:
+            try:
+                max_value = float(max_value_str)
+            except ValueError:
+                return jsonify({'error': 'Invalid max value'}), 400
+        
+        # Validate weight range
+        if weight < 0 or weight > 2:
+            return jsonify({'error': 'Weight must be between 0 and 2'}), 400
+        
+        # Create attribute definition
+        attr_def = AttributeDefinition(
+            name=name,
+            category=AttributeCategory(category),
+            type=AttributeType(attr_type),
+            weight=weight,
+            description=description,
+            possible_values=possible_values,
+            min_value=min_value,
+            max_value=max_value,
+            unit=unit if unit else None
+        )
+        
+        # Add to attribute system
+        attr_system.attributes[name] = attr_def
+        
+        # Save to persistent storage (you might want to implement this)
+        # For now, we'll just return success
+        session['admin_notification'] = f'Attribute "{name}" added successfully!'
+        
+        return jsonify({'success': True, 'message': f'Attribute "{name}" added successfully'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/update_attribute', methods=['POST'])
+@login_required
+def update_attribute():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        attr_system = DynamicAttributeSystem()
+        
+        # Get form data
+        name = request.form.get('name').strip()
+        category = request.form.get('category')
+        attr_type = request.form.get('type')
+        weight = float(request.form.get('weight'))
+        description = request.form.get('description').strip()
+        possible_values_str = request.form.get('possible_values', '').strip()
+        min_value_str = request.form.get('min_value', '').strip()
+        max_value_str = request.form.get('max_value', '').strip()
+        unit = request.form.get('unit', '').strip()
+        
+        # Validate required fields
+        if not name or not description:
+            return jsonify({'error': 'Name and description are required'}), 400
+        
+        # Parse possible values
+        possible_values = None
+        if possible_values_str:
+            possible_values = [v.strip() for v in possible_values_str.split(',') if v.strip()]
+        
+        # Parse numeric values
+        min_value = None
+        max_value = None
+        if min_value_str:
+            try:
+                min_value = float(min_value_str)
+            except ValueError:
+                return jsonify({'error': 'Invalid min value'}), 400
+        
+        if max_value_str:
+            try:
+                max_value = float(max_value_str)
+            except ValueError:
+                return jsonify({'error': 'Invalid max value'}), 400
+        
+        # Validate weight range
+        if weight < 0 or weight > 2:
+            return jsonify({'error': 'Weight must be between 0 and 2'}), 400
+        
+        # Update attribute definition
+        if name not in attr_system.attributes:
+            return jsonify({'error': 'Attribute not found'}), 404
+        
+        attr_def = AttributeDefinition(
+            name=name,
+            category=AttributeCategory(category),
+            type=AttributeType(attr_type),
+            weight=weight,
+            description=description,
+            possible_values=possible_values,
+            min_value=min_value,
+            max_value=max_value,
+            unit=unit if unit else None
+        )
+        
+        attr_system.attributes[name] = attr_def
+        
+        session['admin_notification'] = f'Attribute "{name}" updated successfully!'
+        
+        return jsonify({'success': True, 'message': f'Attribute "{name}" updated successfully'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/delete_attribute', methods=['POST'])
+@login_required
+def delete_attribute():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        attr_system = DynamicAttributeSystem()
+        
+        data = request.get_json()
+        name = data.get('name')
+        
+        if not name:
+            return jsonify({'error': 'Attribute name is required'}), 400
+        
+        if name not in attr_system.attributes:
+            return jsonify({'error': 'Attribute not found'}), 404
+        
+        # Check if it's a core attribute that shouldn't be deleted
+        core_attributes = ['work_type', 'district', 'language']  # Add more as needed
+        if name in core_attributes:
+            return jsonify({'error': f'Cannot delete core attribute "{name}"'}), 400
+        
+        # Remove the attribute
+        del attr_system.attributes[name]
+        
+        session['admin_notification'] = f'Attribute "{name}" deleted successfully!'
+        
+        return jsonify({'success': True, 'message': f'Attribute "{name}" deleted successfully'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/attribute_stats', methods=['GET'])
+@login_required
+def attribute_stats():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        from attribute_system import DynamicAttributeSystem
+        attr_system = DynamicAttributeSystem()
+        
+        # Load dataset if not already loaded
+        try:
+            # Try to load enhanced dataset first
+            attr_system.load_dataset('enhanced_plumbers_dataset.csv')
+        except FileNotFoundError:
+            try:
+                # Fallback to original dataset
+                attr_system.load_dataset('gujarat_plumbers_dataset.csv')
+            except FileNotFoundError:
+                # If no dataset is available, still return attributes (they exist in the system)
+                pass
+        
+        attributes = attr_system.get_available_attributes()
+        
+        # Calculate statistics
+        stats = {
+            'total_attributes': len(attributes),
+            'by_category': {},
+            'by_type': {},
+            'weight_distribution': {
+                'low': 0,    # 0-0.5
+                'medium': 0, # 0.5-1.0
+                'high': 0    # 1.0-2.0
+            }
+        }
+        
+        for attr_def in attributes.values():
+            # Category stats
+            category = attr_def.category.value
+            stats['by_category'][category] = stats['by_category'].get(category, 0) + 1
+            
+            # Type stats
+            attr_type = attr_def.type.value
+            stats['by_type'][attr_type] = stats['by_type'].get(attr_type, 0) + 1
+            
+            # Weight distribution
+            if attr_def.weight <= 0.5:
+                stats['weight_distribution']['low'] += 1
+            elif attr_def.weight <= 1.0:
+                stats['weight_distribution']['medium'] += 1
+            else:
+                stats['weight_distribution']['high'] += 1
+        
+        return jsonify(stats)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/import_attributes', methods=['POST'])
+@login_required
+def import_attributes():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        data = request.get_json()
+        
+        if not data or 'attributes' not in data:
+            return jsonify({'error': 'Invalid configuration format'}), 400
+        
+        from attribute_system import DynamicAttributeSystem, AttributeDefinition, AttributeCategory, AttributeType
+        
+        attr_system = DynamicAttributeSystem()
+        
+        # Clear existing attributes (except core ones)
+        core_attributes = ['work_type', 'district', 'language']
+        attributes_to_remove = [name for name in attr_system.attributes.keys() if name not in core_attributes]
+        for name in attributes_to_remove:
+            del attr_system.attributes[name]
+        
+        # Import new attributes
+        imported_count = 0
+        for attr_data in data['attributes']:
+            try:
+                # Skip core attributes to avoid conflicts
+                if attr_data['name'] in core_attributes:
+                    continue
+                
+                attr_def = AttributeDefinition(
+                    name=attr_data['name'],
+                    category=AttributeCategory(attr_data['category']),
+                    type=AttributeType(attr_data['type']),
+                    weight=float(attr_data['weight']),
+                    description=attr_data['description'],
+                    possible_values=attr_data.get('possible_values'),
+                    min_value=attr_data.get('min_value'),
+                    max_value=attr_data.get('max_value'),
+                    unit=attr_data.get('unit')
+                )
+                
+                attr_system.attributes[attr_data['name']] = attr_def
+                imported_count += 1
+                
+            except Exception as e:
+                print(f"Error importing attribute {attr_data.get('name', 'unknown')}: {str(e)}")
+                continue
+        
+        session['admin_notification'] = f'Successfully imported {imported_count} attributes!'
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Successfully imported {imported_count} attributes',
+            'imported_count': imported_count
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/reset_attributes', methods=['POST'])
+@login_required
+def reset_attributes():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        from attribute_system import DynamicAttributeSystem
+        
+        # Create a fresh attribute system instance
+        attr_system = DynamicAttributeSystem()
+        
+        # The _initialize_attributes method will restore default configuration
+        attr_system.attributes = attr_system._initialize_attributes()
+        
+        session['admin_notification'] = 'Attribute system reset to default configuration!'
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Attribute system reset to default configuration',
+            'total_attributes': len(attr_system.attributes)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/test_attribute_system', methods=['POST'])
+@login_required
+def test_attribute_system():
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        from attribute_system import DynamicAttributeSystem
+        
+        # Get test parameters
+        customer_preferences = {}
+        
+        # Basic preferences
+        if request.form.get('work_type'):
+            customer_preferences['work_type'] = request.form.get('work_type')
+        if request.form.get('district'):
+            customer_preferences['district'] = request.form.get('district')
+        if request.form.get('language'):
+            customer_preferences['language'] = request.form.get('language')
+        
+        # Numeric preferences
+        if request.form.get('experience_years'):
+            customer_preferences['experience_years'] = int(request.form.get('experience_years'))
+        if request.form.get('max_cost'):
+            customer_preferences['max_cost'] = int(request.form.get('max_cost'))
+        
+        # Location
+        if request.form.get('client_lat') and request.form.get('client_lon'):
+            customer_preferences['client_lat'] = float(request.form.get('client_lat'))
+            customer_preferences['client_lon'] = float(request.form.get('client_lon'))
+        
+        # Test the attribute system
+        attr_system = DynamicAttributeSystem()
+        
+        # Load dataset if not already loaded
+        try:
+            # Try to load enhanced dataset first
+            attr_system.load_dataset('enhanced_plumbers_dataset.csv')
+        except FileNotFoundError:
+            try:
+                # Fallback to original dataset
+                attr_system.load_dataset('gujarat_plumbers_dataset.csv')
+            except FileNotFoundError:
+                return jsonify({'error': 'No plumber dataset found. Please ensure either enhanced_plumbers_dataset.csv or gujarat_plumbers_dataset.csv is available.'}), 400
+        
+        matched_plumbers = attr_system.match_plumbers(customer_preferences, max_results=10)
+        
+        # Generate test report
+        report = attr_system.generate_matching_report(customer_preferences, matched_plumbers)
+        
+        # Format results for display
+        results_html = f"""
+        <div class="mb-3">
+            <h6 class="text-primary">Test Parameters:</h6>
+            <ul class="list-unstyled">
+                {''.join([f'<li><strong>{k}:</strong> {v}</li>' for k, v in customer_preferences.items()])}
+            </ul>
+        </div>
+        
+        <div class="mb-3">
+            <h6 class="text-success">Matching Results:</h6>
+            <p><strong>Total Plumbers Found:</strong> {len(matched_plumbers)}</p>
+            <p><strong>Average Match Score:</strong> {report.get('average_score', 0):.2f}</p>
+            <p><strong>Best Match Score:</strong> {report.get('best_score', 0):.2f}</p>
+        </div>
+        
+        <div class="mb-3">
+            <h6 class="text-info">Top 5 Matches:</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Name</th>
+                            <th>Score</th>
+                            <th>District</th>
+                            <th>Specialization</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        """
+        
+        for i, plumber in enumerate(matched_plumbers[:5], 1):
+            results_html += f"""
+                        <tr>
+                            <td>{i}</td>
+                            <td>{plumber.get('Name', 'N/A')}</td>
+                            <td><span class="badge bg-success">{plumber.get('match_score', 0):.2f}</span></td>
+                            <td>{plumber.get('District', 'N/A')}</td>
+                            <td>{plumber.get('Work_Specialization', 'N/A')}</td>
+                        </tr>
+            """
+        
+        results_html += """
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <h6 class="text-warning">Attribute Analysis:</h6>
+            <ul class="list-unstyled">
+        """
+        
+        for attr_name, score_info in report.get('attribute_scores', {}).items():
+            results_html += f'<li><strong>{attr_name}:</strong> {score_info.get("average_score", 0):.2f}</li>'
+        
+        results_html += """
+            </ul>
+        </div>
+        """
+        
+        return jsonify({
+            'success': True,
+            'results': results_html,
+            'total_matches': len(matched_plumbers),
+            'average_score': report.get('average_score', 0)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True) 

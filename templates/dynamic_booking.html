@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Plumber Booking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .main-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            max-width: 1200px;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 0 20px;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .step.active .step-number {
+            background: #667eea;
+            color: white;
+        }
+        
+        .step.completed .step-number {
+            background: #28a745;
+            color: white;
+        }
+        
+        .step-content {
+            padding: 40px;
+            display: none;
+        }
+        
+        .step-content.active {
+            display: block;
+        }
+        
+        .form-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+        }
+        
+        .plumber-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .plumber-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .match-score {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .attribute-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-tools"></i> Advanced Plumber Booking</h1>
+            <p>Find the perfect plumber with our intelligent matching system</p>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step active" id="step1-indicator">
+                <div class="step-number">1</div>
+                <div class="step-label">Basic Info</div>
+            </div>
+            <div class="step" id="step2-indicator">
+                <div class="step-number">2</div>
+                <div class="step-label">Preferences</div>
+            </div>
+            <div class="step" id="step3-indicator">
+                <div class="step-number">3</div>
+                <div class="step-label">Results</div>
+            </div>
+            <div class="step" id="step4-indicator">
+                <div class="step-number">4</div>
+                <div class="step-label">Confirm</div>
+            </div>
+        </div>
+
+        <!-- Step 1: Basic Information -->
+        <div class="step-content active" id="step1">
+            <div class="form-card">
+                <h3 class="mb-4"><i class="fas fa-info-circle"></i> Basic Information</h3>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="date" class="form-label">Service Date *</label>
+                        <input type="date" class="form-control" id="date" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="time_slot" class="form-label">Preferred Time *</label>
+                        <select class="form-select" id="time_slot" required>
+                            <option value="">Select time slot</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="work_type" class="form-label">Type of Work</label>
+                        <select class="form-select" id="work_type">
+                            <option value="">Any work type</option>
+                            <option value="Leak Repair">Leak Repair</option>
+                            <option value="Bathroom Fitting">Bathroom Fitting</option>
+                            <option value="Water Tank Cleaning">Water Tank Cleaning</option>
+                            <option value="Kitchen Plumbing">Kitchen Plumbing</option>
+                            <option value="Pipe Installation">Pipe Installation</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="district" class="form-label">Preferred District</label>
+                        <select class="form-select" id="district">
+                            <option value="">Any district</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="client_lat" class="form-label">Your Latitude</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="client_lat" step="0.0001" placeholder="e.g., 21.1702">
+                            <button type="button" class="btn btn-outline-primary" id="useLocation">
+                                <i class="fas fa-location-arrow"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="client_lon" class="form-label">Your Longitude</label>
+                        <input type="number" class="form-control" id="client_lon" step="0.0001" placeholder="e.g., 72.8311">
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button type="button" class="btn btn-primary btn-lg" id="nextToAttributes">
+                        Next: Select Preferences <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Advanced Preferences -->
+        <div class="step-content" id="step2">
+            <div class="form-card">
+                <h3 class="mb-4"><i class="fas fa-sliders-h"></i> Advanced Preferences</h3>
+                
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-lightbulb"></i>
+                            <strong>Tip:</strong> Select the attributes that matter most to you. The more specific you are, the better the matches!
+                        </div>
+                    </div>
+                </div>
+
+                <div id="attributeCategories">
+                    <!-- Attribute categories will be loaded here -->
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h5><i class="fas fa-check-circle"></i> Selected Preferences</h5>
+                        <div id="selectedAttributes" class="mt-3">
+                            <p class="text-muted">No preferences selected yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button type="button" class="btn btn-secondary me-3" id="backToBasic">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button type="button" class="btn btn-primary btn-lg" id="findPlumbers">
+                        <i class="fas fa-search"></i> Find Plumbers
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Results -->
+        <div class="step-content" id="step3">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-card">
+                        <h5><i class="fas fa-filter"></i> Filters</h5>
+                        
+                        <div class="mb-3">
+                            <label for="minScore" class="form-label">Minimum Match Score</label>
+                            <input type="range" class="form-range" id="minScore" min="0" max="10" step="0.5" value="0">
+                            <small class="text-muted">Score: <span id="scoreValue">0</span></small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="maxDistance" class="form-label">Maximum Distance (km)</label>
+                            <input type="range" class="form-range" id="maxDistance" min="5" max="100" step="5" value="50">
+                            <small class="text-muted">Distance: <span id="distanceValue">50</span> km</small>
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-primary w-100" id="applyFilters">
+                            Apply Filters
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="col-md-9">
+                    <div id="plumberResults">
+                        <!-- Results will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <button type="button" class="btn btn-secondary" id="backToAttributes">
+                    <i class="fas fa-arrow-left"></i> Back to Preferences
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: Booking Confirmation -->
+        <div class="step-content" id="step4">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="form-card">
+                        <h3><i class="fas fa-check-circle"></i> Booking Confirmation</h3>
+                        
+                        <div class="booking-summary">
+                            <h5>Booking Details</h5>
+                            <div id="bookingDetails">
+                                <!-- Booking details will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-card">
+                        <h5><i class="fas fa-user-tie"></i> Selected Plumber</h5>
+                        <div id="plumberDetails">
+                            <!-- Selected plumber details will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <button type="button" class="btn btn-success btn-lg" id="confirmBooking">
+                    <i class="fas fa-check"></i> Confirm Booking
+                </button>
+                <button type="button" class="btn btn-secondary ms-3" id="backToResults">
+                    <i class="fas fa-arrow-left"></i> Back to Results
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let selectedAttributes = {};
+        let matchedPlumbers = [];
+        let selectedPlumber = null;
+        let currentStep = 1;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Initializing Advanced Booking System');
+            loadTimeSlots();
+            loadDistricts();
+            loadAttributeCategories();
+            setupEventListeners();
+            setDefaultLocation();
+        });
+
+        function setupEventListeners() {
+            // Navigation buttons
+            document.getElementById('nextToAttributes').addEventListener('click', () => showStep(2));
+            document.getElementById('backToBasic').addEventListener('click', () => showStep(1));
+            document.getElementById('backToAttributes').addEventListener('click', () => showStep(2));
+            document.getElementById('backToResults').addEventListener('click', () => showStep(3));
+            
+            // Action buttons
+            document.getElementById('findPlumbers').addEventListener('click', findPlumbers);
+            document.getElementById('useLocation').addEventListener('click', getCurrentLocation);
+            document.getElementById('confirmBooking').addEventListener('click', confirmBooking);
+            
+            // Filters
+            document.getElementById('minScore').addEventListener('input', updateFilterLabels);
+            document.getElementById('maxDistance').addEventListener('input', updateFilterLabels);
+            document.getElementById('applyFilters').addEventListener('click', applyFilters);
+        }
+
+        function setDefaultLocation() {
+            // Set default location (Surat, Gujarat)
+            document.getElementById('client_lat').value = '21.1702';
+            document.getElementById('client_lon').value = '72.8311';
+        }
+
+        function showStep(step) {
+            console.log(`📱 Showing step ${step}`);
+            
+            // Hide all steps
+            document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+            
+            // Show selected step
+            document.getElementById(`step${step}`).classList.add('active');
+            
+            // Update step indicators
+            document.querySelectorAll('.step').forEach((el, index) => {
+                el.classList.remove('active', 'completed');
+                if (index + 1 < step) {
+                    el.classList.add('completed');
+                } else if (index + 1 === step) {
+                    el.classList.add('active');
+                }
+            });
+            
+            currentStep = step;
+        }
+
+        function loadTimeSlots() {
+            console.log('⏰ Loading time slots...');
+            fetch('/api/time_slots')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('time_slot');
+                    data.time_slots.forEach(slot => {
+                        const option = document.createElement('option');
+                        option.value = slot;
+                        option.textContent = slot;
+                        select.appendChild(option);
+                    });
+                    console.log(`✅ Loaded ${data.time_slots.length} time slots`);
+                })
+                .catch(error => {
+                    console.error('❌ Error loading time slots:', error);
+                });
+        }
+
+        function loadDistricts() {
+            console.log('🏘️ Loading districts...');
+            fetch('/api/districts')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('district');
+                    data.districts.forEach(district => {
+                        const option = document.createElement('option');
+                        option.value = district;
+                        option.textContent = district;
+                        select.appendChild(option);
+                    });
+                    console.log(`✅ Loaded ${data.districts.length} districts`);
+                })
+                .catch(error => {
+                    console.error('❌ Error loading districts:', error);
+                });
+        }
+
+        function loadAttributeCategories() {
+            console.log('⚙️ Loading attribute categories...');
+            fetch('/api/attribute_categories')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('attributeCategories');
+                    container.innerHTML = '';
+                    
+                    Object.entries(data.categories).forEach(([category, attributes]) => {
+                        const categoryDiv = document.createElement('div');
+                        categoryDiv.className = 'mb-4';
+                        
+                        const header = document.createElement('div');
+                        header.className = 'alert alert-primary';
+                        header.innerHTML = `<i class="fas fa-${getCategoryIcon(category)}"></i> ${getCategoryName(category)}`;
+                        
+                        const body = document.createElement('div');
+                        body.className = 'row';
+                        
+                        attributes.forEach(attr => {
+                            const attrDiv = document.createElement('div');
+                            attrDiv.className = 'col-md-6 mb-3';
+                            attrDiv.innerHTML = createAttributeCard(attr);
+                            body.appendChild(attrDiv);
+                        });
+                        
+                        categoryDiv.appendChild(header);
+                        categoryDiv.appendChild(body);
+                        container.appendChild(categoryDiv);
+                    });
+                    
+                    console.log(`✅ Loaded ${Object.keys(data.categories).length} attribute categories`);
+                })
+                .catch(error => {
+                    console.error('❌ Error loading attribute categories:', error);
+                });
+        }
+
+        function getCategoryIcon(category) {
+            const icons = {
+                'basic': 'info-circle',
+                'professional': 'user-tie',
+                'logistical': 'truck',
+                'quality': 'star',
+                'financial': 'money-bill'
+            };
+            return icons[category] || 'cog';
+        }
+
+        function getCategoryName(category) {
+            const names = {
+                'basic': 'Basic Requirements',
+                'professional': 'Professional Standards',
+                'logistical': 'Logistics & Availability',
+                'quality': 'Quality & Reliability',
+                'financial': 'Financial Preferences'
+            };
+            return names[category] || category;
+        }
+
+        function createAttributeCard(attr) {
+            let inputHtml = '';
+            
+            if (attr.possible_values) {
+                inputHtml = `<select class="form-select attribute-input" data-attribute="${attr.name}">
+                    <option value="">Select ${attr.name}</option>`;
+                attr.possible_values.forEach(value => {
+                    inputHtml += `<option value="${value}">${value}</option>`;
+                });
+                inputHtml += '</select>';
+            } else if (attr.min_value !== null) {
+                inputHtml = `<input type="number" class="form-control attribute-input" 
+                    data-attribute="${attr.name}" 
+                    min="${attr.min_value}" 
+                    max="${attr.max_value}" 
+                    placeholder="${attr.unit ? `Value in ${attr.unit}` : 'Enter value'}">`;
+            }
+            
+            return `
+                <div class="card attribute-card" data-attribute="${attr.name}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">${attr.name}</h6>
+                            <button type="button" class="btn btn-sm btn-outline-primary toggle-attribute" 
+                                data-attribute="${attr.name}">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <p class="text-muted small mb-2">${attr.description}</p>
+                        <div class="attribute-input-container" style="display: none;">
+                            ${inputHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Add event listeners for attribute toggles
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('toggle-attribute')) {
+                const attributeName = e.target.dataset.attribute;
+                const card = e.target.closest('.attribute-card');
+                const inputContainer = card.querySelector('.attribute-input-container');
+                const icon = e.target.querySelector('i');
+                
+                if (inputContainer.style.display === 'none') {
+                    inputContainer.style.display = 'block';
+                    card.classList.add('border-primary');
+                    icon.className = 'fas fa-minus';
+                    updateSelectedAttributes();
+                } else {
+                    inputContainer.style.display = 'none';
+                    card.classList.remove('border-primary');
+                    icon.className = 'fas fa-plus';
+                    delete selectedAttributes[attributeName];
+                    updateSelectedAttributes();
+                }
+            }
+        });
+
+        // Add event listeners for attribute inputs
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('attribute-input')) {
+                updateSelectedAttributes();
+            }
+        });
+
+        function updateSelectedAttributes() {
+            const container = document.getElementById('selectedAttributes');
+            const selectedCards = document.querySelectorAll('.attribute-card.border-primary');
+            
+            if (selectedCards.length === 0) {
+                container.innerHTML = '<p class="text-muted">No preferences selected yet</p>';
+                return;
+            }
+            
+            let html = '';
+            selectedCards.forEach(card => {
+                const attrName = card.dataset.attribute;
+                const input = card.querySelector('.attribute-input');
+                const value = input ? input.value : '';
+                
+                if (value) {
+                    html += `<span class="attribute-badge">${attrName}: ${value}</span>`;
+                }
+            });
+            
+            container.innerHTML = html || '<p class="text-muted">Select values for preferences</p>';
+        }
+
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById('client_lat').value = position.coords.latitude;
+                    document.getElementById('client_lon').value = position.coords.longitude;
+                    alert('📍 Location set successfully!');
+                }, function() {
+                    alert('❌ Could not get your location. Please set it manually.');
+                });
+            } else {
+                alert('❌ Geolocation is not supported by this browser.');
+            }
+        }
+
+        function findPlumbers() {
+            console.log('🔍 findPlumbers function called');
+            
+            // Collect all form data
+            const formData = {
+                date: document.getElementById('date').value,
+                time_slot: document.getElementById('time_slot').value,
+                district: document.getElementById('district').value,
+                client_lat: document.getElementById('client_lat').value,
+                client_lon: document.getElementById('client_lon').value,
+                ...selectedAttributes
+            };
+            
+            console.log('📋 Form data:', formData);
+            
+            // Validate required fields
+            if (!formData.date || !formData.time_slot) {
+                alert('⚠️ Please fill in all required fields (Date and Time).');
+                return;
+            }
+            
+            // Show loading
+            const resultsContainer = document.getElementById('plumberResults');
+            resultsContainer.innerHTML = `
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+                    <h4 class="mt-3">Finding the perfect plumbers for you...</h4>
+                    <p class="text-muted">This may take a few seconds</p>
+                </div>
+            `;
+            
+            console.log('🌐 Making API call to /api/dynamic_match_plumbers');
+            
+            // Make API call
+            fetch('/api/dynamic_match_plumbers', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                console.log('📡 Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('📦 Response data:', data);
+                
+                if (data.error) {
+                    console.error('❌ API error:', data.error);
+                    resultsContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Error:</strong> ${data.error}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                matchedPlumbers = data.plumbers;
+                
+                if (!data.plumbers || data.plumbers.length === 0) {
+                    console.log('⚠️ No plumbers found');
+                    resultsContainer.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-search"></i>
+                            <strong>No plumbers found</strong> matching your criteria. 
+                            Try relaxing some preferences or selecting a different district.
+                        </div>
+                    `;
+                    return;
+                }
+                
+                console.log(`✅ Found ${data.plumbers.length} plumbers`);
+                displayPlumberResults(data.plumbers);
+                showStep(3);
+            })
+            .catch(error => {
+                console.error('❌ Fetch error:', error);
+                resultsContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Error:</strong> Unable to search for plumbers. Please try again.
+                    </div>
+                `;
+            });
+        }
+
+        function displayPlumberResults(plumbers) {
+            const container = document.getElementById('plumberResults');
+            
+            if (!plumbers || plumbers.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-search"></i>
+                        No plumbers found matching your criteria.
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `<h4 class="mb-4"><i class="fas fa-users"></i> Found ${plumbers.length} Plumbers</h4>`;
+            plumbers.forEach(plumber => {
+                html += createPlumberCard(plumber);
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function createPlumberCard(plumber) {
+            const matchScore = plumber.Match_Score || 0;
+            const distance = plumber.Distance_km || 'N/A';
+            const rating = plumber.Rating || 'N/A';
+            const experience = plumber.Experience_Years || 'N/A';
+            
+            return `
+                <div class="plumber-card">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5><i class="fas fa-user-tie"></i> ${plumber.Name}</h5>
+                            <p class="text-muted">
+                                <i class="fas fa-tools"></i> ${plumber.Work_Specialization} • 
+                                <i class="fas fa-map-marker-alt"></i> ${plumber.District}
+                            </p>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <small class="text-muted">Match Score</small>
+                                    <div class="match-score">${matchScore}/10</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Distance</small>
+                                    <div><i class="fas fa-road"></i> ${distance} km</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Rating</small>
+                                    <div><i class="fas fa-star"></i> ${rating} ⭐</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Experience</small>
+                                    <div><i class="fas fa-clock"></i> ${experience} years</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong><i class="fas fa-language"></i> Languages:</strong> ${plumber.Languages_Spoken}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong><i class="fas fa-calendar"></i> Available:</strong> ${plumber.Free_Time_Slots}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 text-end">
+                            <div class="mb-3">
+                                <div class="progress">
+                                    <div class="progress-bar bg-primary" style="width: ${(matchScore/10)*100}%"></div>
+                                </div>
+                                <small class="text-muted">Match Score</small>
+                            </div>
+                            
+                            <button type="button" class="btn btn-primary mb-2 w-100" 
+                                onclick="selectPlumber('${plumber.Name}')">
+                                <i class="fas fa-check"></i> Select This Plumber
+                            </button>
+                            
+                            <button type="button" class="btn btn-outline-info btn-sm w-100" 
+                                onclick="viewPlumberDetails('${plumber.Name}')">
+                                <i class="fas fa-info-circle"></i> View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectPlumber(plumberName) {
+            selectedPlumber = matchedPlumbers.find(p => p.Name === plumberName);
+            if (selectedPlumber) {
+                showBookingConfirmation();
+                showStep(4);
+            }
+        }
+
+        function showBookingConfirmation() {
+            const bookingDetails = document.getElementById('bookingDetails');
+            const plumberDetails = document.getElementById('plumberDetails');
+            
+            // Booking details
+            bookingDetails.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Date:</strong> ${document.getElementById('date').value}<br>
+                        <strong>Time:</strong> ${document.getElementById('time_slot').value}<br>
+                        <strong>District:</strong> ${document.getElementById('district').value || 'Any'}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Selected Preferences:</strong><br>
+                        ${Object.entries(selectedAttributes).map(([key, value]) => 
+                            `<span class="attribute-badge">${key}: ${value}</span>`
+                        ).join(' ')}
+                    </div>
+                </div>
+            `;
+            
+            // Plumber details
+            plumberDetails.innerHTML = `
+                <h6>${selectedPlumber.Name}</h6>
+                <p><strong>Specialization:</strong> ${selectedPlumber.Work_Specialization}</p>
+                <p><strong>Experience:</strong> ${selectedPlumber.Experience_Years} years</p>
+                <p><strong>Rating:</strong> ${selectedPlumber.Rating} ⭐</p>
+                <p><strong>Languages:</strong> ${selectedPlumber.Languages_Spoken}</p>
+                <p><strong>Match Score:</strong> ${selectedPlumber.Match_Score}/10</p>
+            `;
+        }
+
+        function confirmBooking() {
+            if (!selectedPlumber) {
+                alert('⚠️ Please select a plumber first.');
+                return;
+            }
+            
+            const bookingData = {
+                plumber_name: selectedPlumber.Name,
+                date: document.getElementById('date').value,
+                time_slot: document.getElementById('time_slot').value,
+                work_type: selectedPlumber.Work_Specialization,
+                client_lat: document.getElementById('client_lat').value,
+                client_lon: document.getElementById('client_lon').value,
+                selected_attributes: selectedAttributes
+            };
+            
+            fetch('/api/confirm_booking', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(bookingData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('🎉 Booking confirmed successfully!');
+                    window.location.href = '/customer_dashboard';
+                } else {
+                    alert('❌ Error confirming booking: ' + data.error);
+                } 
+            })
+            .catch(error => {
+                alert('❌ Error confirming booking. Please try again.');
+            });
+        }
+
+        function updateFilterLabels() {
+            document.getElementById('scoreValue').textContent = document.getElementById('minScore').value;
+            document.getElementById('distanceValue').textContent = document.getElementById('maxDistance').value;
+        }
+
+        function applyFilters() {
+            const minScore = parseFloat(document.getElementById('minScore').value);
+            const maxDistance = parseFloat(document.getElementById('maxDistance').value);
+            
+            const filtered = matchedPlumbers.filter(plumber => {
+                const score = plumber.Match_Score || 0;
+                const distance = plumber.Distance_km || 0;
+                
+                return score >= minScore && distance <= maxDistance;
+            });
+            
+            displayPlumberResults(filtered);
+        }
+
+        function viewPlumberDetails(plumberName) {
+            const plumber = matchedPlumbers.find(p => p.Name === plumberName);
+            if (plumber) {
+                const details = `
+                    <strong>Name:</strong> ${plumber.Name}<br>
+                    <strong>Specialization:</strong> ${plumber.Work_Specialization}<br>
+                    <strong>District:</strong> ${plumber.District}<br>
+                    <strong>Experience:</strong> ${plumber.Experience_Years} years<br>
+                    <strong>Rating:</strong> ${plumber.Rating} ⭐<br>
+                    <strong>Languages:</strong> ${plumber.Languages_Spoken}<br>
+                    <strong>Available:</strong> ${plumber.Free_Time_Slots}<br>
+                    <strong>License:</strong> ${plumber.License_Type}<br>
+                    <strong>Insurance:</strong> ${plumber.Insurance_Status}<br>
+                    <strong>Equipment:</strong> ${plumber.Equipment_Available}<br>
+                    <strong>Payment Methods:</strong> ${plumber.Payment_Methods}
+                `;
+                
+                alert(`📋 ${plumber.Name} - Details\n\n${details}`);
+            }
+        }
+    </script>
+</body>
+</html> 
